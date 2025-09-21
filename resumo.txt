@@ -1,5 +1,6 @@
-Dia 26 
-Hoje eu fiz algumas alterações no código do copilot para verificar e 
-fazer alguns testes e fazer com que o conflito sumisse, também o 
-coloquei com https para conseguir se comunicar com o looker, 
-Infelizmente todos os testes que fiz não deram certo.
+Requerimento: 00017
+Dia 29 
+Hoje continuei os testes locais com os 3 projetos, o consegui fazer o copilot 
+funcionar e subir com https e o sonar também, o traefik funciona também. 
+A unica tarefa pendente é são as pipelines. No local está funcionando como 
+esperado.
