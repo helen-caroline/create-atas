@@ -1,0 +1,5 @@
+Dia 26 
+Hoje eu fiz algumas alterações no código do copilot para verificar e 
+fazer alguns testes e fazer com que o conflito sumisse, também o 
+coloquei com https para conseguir se comunicar com o looker, 
+Infelizmente todos os testes que fiz não deram certo.
