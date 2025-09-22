@@ -50,6 +50,25 @@ label { font-weight: 600; margin-top: 12px; display: block; color: var(--muted);
 input, textarea { width: 100%; padding: 12px; margin-top: 6px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.06); background: rgba(255,255,255,0.02); color: #e6eef6; font-size:15px }
 input::placeholder, textarea::placeholder{color:rgba(230,238,246,0.35)}
 
+/* Date input tweaks: make calendar icon visible (white) and show pointer on hover */
+input[type="date"]{
+	/* give extra right padding so the icon doesn't overlap the typed date */
+	padding-right: 36px;
+	cursor: text; /* default cursor for text input */
+}
+
+/* WebKit-based browsers (Chrome, Safari) - color the calendar icon */
+input[type="date"]::-webkit-calendar-picker-indicator {
+	filter: invert(1) brightness(2);
+	cursor: pointer;
+}
+
+/* Firefox: show pointer when hovering over the control */
+input[type="date"]:hover { cursor: pointer; }
+
+/* If we want to keep typing behavior but show pointer on the icon area only,
+   we make the overall input show pointer on hover for better discoverability. */
+
 textarea { min-height:160px; resize:vertical; max-height:45vh }
 
 /* Make the user resumo textarea taller and responsive */

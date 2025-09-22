@@ -16,7 +16,8 @@
                         <h2>Gerador de Atas</h2>
                         <form id="ataForm">
                             <label for="data">Data</label>
-                            <input type="text" id="data" name="data" value="{{ hoje }}" required>
+                            <!-- Use native date picker; normalize server-provided `{{ hoje }}` to YYYY-MM-DD if needed -->
+                            <input type="date" id="data" name="data" value="{{ hoje }}" required>
 
                             <label for="requerimento">Número do Requerimento</label>
                             <input type="text" id="requerimento" name="requerimento" required>

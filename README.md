@@ -7,13 +7,21 @@ Como usar com Docker
 1) Build da imagem:
 
    docker build -t create-atas:latest .
+   # aplicando modificações
+   docker-compose up --build -d
 
 2) Rodar o container (expondo porta 5001):
 
-   docker run --rm -p 5001:5001 \
-     -e HF_TOKEN="<seu_token_hf>" \
-     -v $(pwd)/templates:/app/templates:ro \
-     create-atas:latest
+   docker run --name create-atas \
+  -d \
+  -p 5001:5001 \
+  -e HF_TOKEN="$HF_TOKEN" \
+  -e PORT=5001 \
+  create-atas:local
+
+  docker rename create-atas-debug create-atas-debug-old
+# agora o nome fica livre
+docker run --name create-atas-debug -p 5001:5001 -e HF_TOKEN="$HF_TOKEN" create-atas:local
 
 3) Ou usar docker-compose:
 

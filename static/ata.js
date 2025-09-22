@@ -89,6 +89,33 @@ document.getElementById('ataForm').onsubmit = async function(e) {
         // Normalize parts and avoid duplicating "Atividade do dia"
         const req = limparTexto(formData.requerimento) || '0000';
         const data = limparTexto(formData.data) || '';
+        // Format date for filename as DD-MM-YYYY when possible
+        function formatToDDMMYYYY(s) {
+            if (!s) return '';
+            s = s.trim();
+            // ISO YYYY-MM-DD
+            if (/^\d{4}-\d{2}-\d{2}$/.test(s)) {
+                const parts = s.split('-');
+                return `${parts[2]}-${parts[1]}-${parts[0]}`;
+            }
+            // DD/MM/YYYY or D/M/YYYY
+            const m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+            if (m) {
+                const dd = String(Number(m[1])).padStart(2,'0');
+                const mm = String(Number(m[2])).padStart(2,'0');
+                return `${dd}-${mm}-${m[3]}`;
+            }
+            // Try parsing via Date as fallback
+            const parsed = new Date(s);
+            if (!isNaN(parsed)) {
+                const dd = String(parsed.getDate()).padStart(2,'0');
+                const mm = String(parsed.getMonth()+1).padStart(2,'0');
+                const yyyy = parsed.getFullYear();
+                return `${dd}-${mm}-${yyyy}`;
+            }
+            return s;
+        }
+        const dataForName = formatToDDMMYYYY(data);
         // Prefer explicit user-provided issue title when available
         let userTitle = limparTexto(formData.titulo_issue);
         let t = userTitle || limparTexto(titulo) || 'Atividade do dia';
@@ -115,7 +142,7 @@ document.getElementById('ataForm').onsubmit = async function(e) {
         const tagPart = tag ? `[ATA]${tag}` : `[ATA]`;
         // Remove stray 'Copilot' words if any
         t = t.replace(/\bCopilot\b/ig, '').replace(/\s+/g, ' ').trim();
-        return `${req} - ${tagPart} ${t} - Atividade do dia ${data}`;
+        return `${req} - ${tagPart} ${t} - Atividade do dia ${dataForName}`;
     }
 
     function preencherCamposSeparados(ata, formData) {
@@ -145,7 +172,14 @@ document.getElementById('ataForm').onsubmit = async function(e) {
             // Build the final text: include title at top if present
             const parts = [];
             if (tituloFinal) parts.push(tituloFinal);
-            parts.push((corpo || ata).trim());
+            const mainBody = (corpo || ata).trim();
+            if (mainBody) parts.push(mainBody);
+            // Append 'Próximos passos' when available (either from backend arg or extracted)
+            if (proximosFinal) {
+                // normalize spacing and add a heading for clarity
+                const proxText = proximosFinal.trim();
+                if (proxText) parts.push(`Próximos passos:\n${proxText}`);
+            }
             ataEl.textContent = parts.join('\n\n').trim();
         }
     }
@@ -213,3 +247,41 @@ function showToast(message, ms = 1600) {
         console.warn('toast failed', e);
     }
 }
+// Normalize server-provided date into YYYY-MM-DD for input[type=date]
+(function(){
+    try {
+        const el = document.getElementById('data');
+        if (!el) return;
+        let v = el.value && el.value.trim();
+        // If empty, set to today
+        function toYMD(d){
+            const yyyy = d.getFullYear();
+            const mm = String(d.getMonth()+1).padStart(2,'0');
+            const dd = String(d.getDate()).padStart(2,'0');
+            return `${yyyy}-${mm}-${dd}`;
+        }
+        if (!v) { el.value = toYMD(new Date()); return; }
+        // If already in ISO format YYYY-MM-DD, keep it
+        if (/^\d{4}-\d{2}-\d{2}$/.test(v)) { return; }
+        // Try DD/MM/YYYY or D/M/YYYY
+        const m = v.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+        if (m) {
+            const dd = Number(m[1]);
+            const mm = Number(m[2]);
+            const yyyy = Number(m[3]);
+            const d = new Date(yyyy, mm-1, dd);
+            if (!isNaN(d)) el.value = toYMD(d);
+            return;
+        }
+        // Try common verbose formats like '22 de setembro de 2025'
+        const m2 = v.match(/(\d{1,2}).*?(\d{4})$/);
+        if (m2) {
+            // attempt Date.parse fallback
+            const parsed = new Date(v);
+            if (!isNaN(parsed)) el.value = toYMD(parsed);
+            return;
+        }
+        // As a last resort, set today
+        el.value = toYMD(new Date());
+    } catch(e){ console.warn('date normalize failed', e); }
+})();
