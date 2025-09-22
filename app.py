@@ -52,4 +52,8 @@ def gerar_ata_route():
     return jsonify({"ata": ata})
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    # Allow overriding the port via PORT env var. Default to 5000 to avoid common macOS conflicts on 5000.
+    port = int(os.environ.get("PORT", "5000"))
+    host = os.environ.get("HOST", "127.0.0.1")
+    print(f"Starting Flask app on http://{host}:{port}")
+    app.run(debug=True, host=host, port=port)

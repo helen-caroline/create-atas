@@ -6,15 +6,19 @@
     <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        body { font-family: Arial, sans-serif; background: #f7f7f7; }
-        .container { max-width: 500px; margin: 40px auto; background: #fff; padding: 32px; border-radius: 8px; box-shadow: 0 2px 8px #0001; }
-        label { font-weight: bold; margin-top: 16px; display: block; }
-        input, textarea { width: 100%; padding: 8px; margin-top: 4px; border-radius: 4px; border: 1px solid #ccc; }
-        button { margin-top: 20px; padding: 10px 24px; background: #007bff; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; background: #f7f7f7; }
+        .container { max-width: 600px; margin: 40px auto; background: #fff; padding: 32px; border-radius: 12px; box-shadow: 0 2px 16px #0002; }
+        h2 { font-weight: 700; margin-bottom: 24px; }
+        label { font-weight: 600; margin-top: 16px; display: block; color: #333; }
+        input, textarea { width: 100%; padding: 10px; margin-top: 4px; border-radius: 6px; border: 1px solid #ccc; font-size: 16px; }
+        button { margin-top: 20px; padding: 10px 24px; background: #007bff; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; transition: background 0.2s; }
         button:disabled { background: #aaa; }
-        .ata-box { margin-top: 32px; background: #f0f0f0; padding: 16px; border-radius: 6px; position: relative; }
-        .copy-btn { position: absolute; top: 12px; right: 12px; background: none; border: none; cursor: pointer; font-size: 20px; color: #007bff; }
+        .ata-box { margin-top: 32px; background: #f8f9fa; padding: 24px; border-radius: 12px; box-shadow: 0 1px 8px #0001; }
+        .campo-copia { margin-bottom: 24px; }
+        .campo-copia-box { display: flex; align-items: center; gap: 8px; background: #e9ecef; padding: 12px; border-radius: 8px; font-size: 16px; }
+        .copy-btn { background: none; border: none; cursor: pointer; font-size: 20px; color: #007bff; margin-left: 8px; transition: color 0.2s; position: static; }
         .copy-btn:active { color: #0056b3; }
+        pre { font-size: 15px; margin: 0; }
     </style>
 </head>
 <body>
@@ -27,6 +31,9 @@
             <label for="requerimento">Número do Requerimento</label>
             <input type="text" id="requerimento" name="requerimento" required>
 
+            <label for="titulo_issue">Título da Issue (para o nome do arquivo)</label>
+            <input type="text" id="titulo_issue" name="titulo_issue" placeholder="[ECAD] Construção do fluxo Audiovisual">
+
             <label for="resumo">Resumo do Usuário</label>
             <textarea id="resumo" name="resumo" rows="6" required></textarea>
 
@@ -35,8 +42,20 @@
 
         <div id="ataResult" style="display:none;">
             <div class="ata-box">
-                <button class="copy-btn" onclick="copyAta()" title="Copiar ATA"><i class="fa fa-copy"></i></button>
-                <pre id="ataText" style="white-space: pre-wrap;"></pre>
+                <div style="margin-bottom:24px;">
+                    <label>Nome do arquivo:</label>
+                    <div style="display:flex;align-items:center;gap:8px;background:#e9ecef;padding:10px;border-radius:6px;">
+                        <span id="nomeArquivo" style="font-weight:bold;"></span>
+                        <button class="copy-btn" onclick="copyCampo('nomeArquivo')" title="Copiar nome do arquivo"><i class="fa fa-copy"></i></button>
+                    </div>
+                </div>
+                <!-- Removed separate Título da ata and Próximos passos fields per request -->
+                <hr style="margin:24px 0;">
+                <label>ATA completa:</label>
+                <div style="position:relative;background:#f0f0f0;padding:16px;border-radius:6px;">
+                    <button class="copy-btn" style="position:absolute;top:12px;right:12px;" onclick="copyAta()" title="Copiar ATA completa"><i class="fa fa-copy"></i></button>
+                    <pre id="ataText" style="white-space: pre-wrap;"></pre>
+                </div>
             </div>
         </div>
     </div>
@@ -49,10 +68,74 @@
             document.getElementById('ataResult').style.display = 'none';
             const res = await fetch('/gerar_ata', { method: 'POST', body: fd });
             const data = await res.json();
-            document.getElementById('ataText').textContent = data.ata;
+            // Pass form values so we can construct a deterministic filename
+            const formData = {
+                data: form.querySelector('#data').value,
+                requerimento: form.querySelector('#requerimento').value,
+                titulo_issue: form.querySelector('#titulo_issue').value
+            };
+            preencherCamposSeparados(data.ata, formData);
             document.getElementById('ataResult').style.display = 'block';
             form.querySelector('button[type="submit"]').disabled = false;
         };
+
+            function limparTexto(str) {
+                return (str || '').replace(/\r/g, '').trim();
+            }
+
+            function construirNomeArquivo(formData, titulo) {
+                // Normalize parts and avoid duplicating "Atividade do dia"
+                const req = limparTexto(formData.requerimento) || '0000';
+                const data = limparTexto(formData.data) || '';
+                // Prefer explicit user-provided issue title when available
+                let userTitle = limparTexto(formData.titulo_issue);
+                let t = userTitle || limparTexto(titulo) || 'Atividade do dia';
+                // If title already contains the phrase, don't duplicate
+                t = t.replace(/^Atividade do dia\s*-?\s*/i, '').trim();
+
+                // Try to extract bracketed tags like [CINEMAX] from the userTitle.
+                // If there are multiple tags, prefer the first one that is NOT Copilot.
+                let tag = '';
+                if (userTitle) {
+                    // Find all bracketed tags
+                    const allTags = userTitle.match(/\[[^\]]+\]/g) || [];
+                    // Filter out any tag that mentions 'copilot'
+                    const usefulTags = allTags.filter(tg => !/copilot/i.test(tg));
+                    if (usefulTags.length > 0) {
+                        tag = usefulTags[0];
+                    } else if (allTags.length > 0) {
+                        // Only Copilot-like tags present, ignore them (don't use Copilot)
+                        tag = '';
+                    }
+                    // Remove all bracketed tags from visible title to avoid duplication
+                    t = t.replace(/\s*\[[^\]]+\]\s*/g, '').trim();
+                }
+                const tagPart = tag ? `[ATA]${tag}` : `[ATA]`;
+                // Remove stray 'Copilot' words if any
+                t = t.replace(/\bCopilot\b/ig, '').replace(/\s+/g, ' ').trim();
+                return `${req} - ${tagPart} ${t} - Atividade do dia ${data}`;
+            }
+
+            function preencherCamposSeparados(ata, formData) {
+                ata = limparTexto(ata);
+
+                // Per request: do not perform any extraction or trimming for title or next steps.
+                // Show the ATA completa exactly as returned by the server, trimmed only of surrounding whitespace.
+                document.getElementById('tituloAta')?.remove();
+                document.getElementById('proximosPassos')?.remove();
+
+                // Nome do arquivo: construir a partir do requerimento e do título da issue (não extraímos título da ata)
+                const nomeArquivo = construirNomeArquivo(formData, '');
+                document.getElementById('nomeArquivo').textContent = nomeArquivo;
+
+                // ATA completa: show raw text (trimmed of leading/trailing whitespace)
+                document.getElementById('ataText').textContent = ata.trim();
+            }
+
+            function copyCampo(id) {
+                const text = document.getElementById(id).textContent;
+                navigator.clipboard.writeText(text);
+            }
         function copyAta() {
             const text = document.getElementById('ataText').textContent;
             navigator.clipboard.writeText(text);
