@@ -9,43 +9,54 @@
     <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-    <div class="container">
-        <h2>Gerador de Atas</h2>
-        <form id="ataForm">
-            <label for="data">Data</label>
-            <input type="text" id="data" name="data" value="{{ hoje }}" required>
+        <div class="app-root">
+            <div class="container">
+                <div class="left-pane">
+                    <div class="form-card">
+                        <h2>Gerador de Atas</h2>
+                        <form id="ataForm">
+                            <label for="data">Data</label>
+                            <input type="text" id="data" name="data" value="{{ hoje }}" required>
 
-            <label for="requerimento">Número do Requerimento</label>
-            <input type="text" id="requerimento" name="requerimento" required>
+                            <label for="requerimento">Número do Requerimento</label>
+                            <input type="text" id="requerimento" name="requerimento" required>
 
-            <label for="titulo_issue">Título da Issue (para o nome do arquivo)</label>
-            <input type="text" id="titulo_issue" name="titulo_issue" placeholder="[ECAD] Construção do fluxo Audiovisual">
+                            <label for="titulo_issue">Título da Issue (para o nome do arquivo)</label>
+                            <input type="text" id="titulo_issue" name="titulo_issue" placeholder="[ECAD] Construção do fluxo Audiovisual">
 
-            <label for="resumo">Resumo do Usuário</label>
-            <textarea id="resumo" name="resumo" rows="6" required></textarea>
+                            <label for="resumo">Resumo do Usuário</label>
+                            <textarea id="resumo" name="resumo" rows="8" required></textarea>
 
-            <button type="submit">Gerar ATA</button>
-        </form>
-    <div id="ataError" style="color:#a00;margin-top:12px;display:none;"></div>
-
-        <div id="ataResult" style="display:none;">
-            <div class="ata-box">
-                <div style="margin-bottom:24px;">
-                    <label>Nome do arquivo:</label>
-                    <div style="display:flex;align-items:center;gap:8px;background:#e9ecef;padding:10px;border-radius:6px;">
-                        <span id="nomeArquivo" style="font-weight:bold;"></span>
-                        <button class="copy-btn" onclick="copyCampo('nomeArquivo')" title="Copiar nome do arquivo"><i class="fa fa-copy"></i></button>
+                            <button type="submit">Gerar ATA</button>
+                        </form>
+                        <div id="ataError" class="small-note" style="display:none;margin-top:8px;color:#ff6b6b"></div>
                     </div>
                 </div>
-                <hr style="margin:24px 0;">
-                <label>ATA completa:</label>
-                <div style="position:relative;background:#f0f0f0;padding:16px;border-radius:6px;">
-                    <button class="copy-btn" style="position:absolute;top:12px;right:12px;" onclick="copyAta()" title="Copiar ATA completa"><i class="fa fa-copy"></i></button>
-                    <pre id="ataText" style="white-space: pre-wrap;"></pre>
+
+                <div class="right-pane">
+                    <div id="ataResult" style="display:none; height:100%;">
+                        <div class="ata-box ata-content">
+                            <div class="nome-row" style="margin-bottom:8px">
+                                <div>
+                                    <label class="muted">Nome do arquivo:</label>
+                                    <div style="display:flex;align-items:center;gap:8px;margin-top:6px;">
+                                        <div class="nome" id="nomeArquivo"></div>
+                                        <button class="copy-btn" onclick="copyCampo('nomeArquivo')" title="Copiar nome do arquivo"><i class="fa fa-copy"></i></button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div style="height:8px"></div>
+                            <label class="muted">ATA completa:</label>
+                            <div style="position:relative;margin-top:6px;display:flex;flex-direction:column;gap:8px;flex:1;min-height:0;">
+                                <button class="copy-btn" style="position:absolute;top:18px;right:28px;z-index:2;" onclick="copyAta()" title="Copiar ATA completa"><i class="fa fa-copy"></i></button>
+                                <pre id="ataText" class="ata-pre"></pre>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
-    <script src="/static/ata.js"></script>
+        <script src="/static/ata.js"></script>
 </body>
 </html>
