@@ -164,11 +164,52 @@ document.getElementById('ataForm').onsubmit = async function(e) {
         return '';
     }
 
-    function copyCampo(id) {
-        const text = document.getElementById(id).textContent;
-        navigator.clipboard.writeText(text);
+    async function copyCampo(id) {
+        const el = document.getElementById(id);
+        const text = el ? el.textContent || '' : '';
+        try {
+            await navigator.clipboard.writeText(text);
+            showToast('Copiado');
+        } catch (err) {
+            console.warn('copy failed', err);
+            showToast('Falha ao copiar');
+        }
     }
-function copyAta() {
-    const text = document.getElementById('ataText').textContent;
-    navigator.clipboard.writeText(text);
+
+async function copyAta() {
+    const el = document.getElementById('ataText');
+    const text = el ? el.textContent || '' : '';
+    try {
+        await navigator.clipboard.writeText(text);
+        showToast('Copiado');
+    } catch (err) {
+        console.warn('copy failed', err);
+        showToast('Falha ao copiar');
+    }
+}
+
+// Simple toast helper
+function showToast(message, ms = 1600) {
+    try {
+        let el = document.getElementById('toast');
+        if (!el) {
+            el = document.createElement('div');
+            el.id = 'toast';
+            document.body.appendChild(el);
+        }
+        el.textContent = message;
+        el.style.display = 'block';
+        // reflow to allow transition
+        void el.offsetWidth;
+        el.classList.add('show');
+        clearTimeout(el._hideTimeout);
+        el._hideTimeout = setTimeout(() => {
+            el.classList.remove('show');
+            // wait for transition end then hide
+            setTimeout(() => { el.style.display = 'none'; }, 200);
+        }, ms);
+    } catch (e) {
+        // fail silently
+        console.warn('toast failed', e);
+    }
 }

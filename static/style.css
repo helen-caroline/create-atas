@@ -97,3 +97,25 @@ button:disabled { background: #344154; opacity:0.7; cursor:not-allowed }
 }
 
 pre { font-size: 14px; margin: 0; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, 'Roboto Mono', monospace }
+
+/* Toast notification */
+#toast {
+	position: fixed;
+	right: 24px;
+	bottom: 24px;
+	background: rgba(2,6,23,0.9);
+	color: #e6eef6;
+	padding: 10px 14px;
+	border-radius: 8px;
+	box-shadow: 0 8px 24px rgba(2,6,23,0.6);
+	font-weight: 600;
+	font-size: 13px;
+	z-index: 9999;
+	opacity: 0;
+	transform: translateY(12px);
+	transition: opacity 180ms ease, transform 180ms ease;
+}
+#toast.show {
+	opacity: 1;
+	transform: translateY(0);
+}
