@@ -49,6 +49,13 @@
                         <button class="copy-btn" onclick="copyCampo('nomeArquivo')" title="Copiar nome do arquivo"><i class="fa fa-copy"></i></button>
                     </div>
                 </div>
+                <div class="campo-copia" style="margin-bottom:8px;">
+                    <label>Título da ATA:</label>
+                    <div class="campo-copia-box">
+                        <span id="tituloAta" style="font-weight:600;"></span>
+                        <button class="copy-btn" onclick="copyCampo('tituloAta')" title="Copiar título da ATA"><i class="fa fa-copy"></i></button>
+                    </div>
+                </div>
                 <!-- Removed separate Título da ata and Próximos passos fields per request -->
                 <hr style="margin:24px 0;">
                 <label>ATA completa:</label>
@@ -81,6 +88,22 @@
 
             function limparTexto(str) {
                 return (str || '').replace(/\r/g, '').trim();
+            }
+
+            // Extract first occurrence of a title line like "Título: ..." or "Titulo: ..."
+            function extrairTituloDaAta(text) {
+                if (!text) return '';
+                // Normalize line endings and split
+                const lines = text.replace(/\r/g, '').split(/\n+/);
+                for (let ln of lines) {
+                    const l = ln.trim();
+                    // Match variations: Título:, Titulo:, Title:, case-insensitive
+                    const m = l.match(/^\s*(t[ií]tulo|title)\s*:\s*(.+)$/i);
+                    if (m) {
+                        return m[2].trim();
+                    }
+                }
+                return '';
             }
 
             function construirNomeArquivo(formData, titulo) {
@@ -119,17 +142,19 @@
             function preencherCamposSeparados(ata, formData) {
                 ata = limparTexto(ata);
 
-                // Per request: do not perform any extraction or trimming for title or next steps.
-                // Show the ATA completa exactly as returned by the server, trimmed only of surrounding whitespace.
-                document.getElementById('tituloAta')?.remove();
-                document.getElementById('proximosPassos')?.remove();
-
-                // Nome do arquivo: construir a partir do requerimento e do título da issue (não extraímos título da ata)
+                // Nome do arquivo: construir a partir do requerimento e do título da issue
                 const nomeArquivo = construirNomeArquivo(formData, '');
-                document.getElementById('nomeArquivo').textContent = nomeArquivo;
+                const nomeEl = document.getElementById('nomeArquivo');
+                if (nomeEl) nomeEl.textContent = nomeArquivo;
+
+                // Extrair o título da ATA (linha que começa com "Título:") e preencher o campo separado
+                const tituloExtraido = extrairTituloDaAta(ata);
+                const tituloEl = document.getElementById('tituloAta');
+                if (tituloEl) tituloEl.textContent = tituloExtraido || '';
 
                 // ATA completa: show raw text (trimmed of leading/trailing whitespace)
-                document.getElementById('ataText').textContent = ata.trim();
+                const ataEl = document.getElementById('ataText');
+                if (ataEl) ataEl.textContent = ata.trim();
             }
 
             function copyCampo(id) {
