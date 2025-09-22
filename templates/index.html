@@ -56,6 +56,13 @@
                         <button class="copy-btn" onclick="copyCampo('tituloAta')" title="Copiar título da ATA"><i class="fa fa-copy"></i></button>
                     </div>
                 </div>
+                <div class="campo-copia" style="margin-bottom:8px;">
+                    <label>Próximos passos:</label>
+                    <div class="campo-copia-box">
+                        <span id="proximosPassos" style="font-weight:600;"></span>
+                        <button class="copy-btn" onclick="copyCampo('proximosPassos')" title="Copiar próximos passos"><i class="fa fa-copy"></i></button>
+                    </div>
+                </div>
                 <!-- Removed separate Título da ata and Próximos passos fields per request -->
                 <hr style="margin:24px 0;">
                 <label>ATA completa:</label>
@@ -106,6 +113,21 @@
                 return '';
             }
 
+            // Extract the "Próximos passo(s):" section. Capture content after the label until a blank line or end.
+            function extrairProximosPassosDaAta(text) {
+                if (!text) return '';
+                // Normalize line endings
+                const normalized = text.replace(/\r/g, '');
+                // Look for the label (singular/plural, with/without accent)
+                const re = /(?:^|\n)\s*(pr[oó]ximos?\s+passo?s?)\s*:\s*(?:\n)?([\s\S]*?)(?=(\n\s*\n)|$)/i;
+                const m = normalized.match(re);
+                if (m) {
+                    // m[2] contains the block until the next blank line or end
+                    return m[2].trim();
+                }
+                return '';
+            }
+
             function construirNomeArquivo(formData, titulo) {
                 // Normalize parts and avoid duplicating "Atividade do dia"
                 const req = limparTexto(formData.requerimento) || '0000';
@@ -151,6 +173,11 @@
                 const tituloExtraido = extrairTituloDaAta(ata);
                 const tituloEl = document.getElementById('tituloAta');
                 if (tituloEl) tituloEl.textContent = tituloExtraido || '';
+
+                // Extrair Próximos passos e preencher o campo (se houver)
+                const proximos = extrairProximosPassosDaAta(ata);
+                const proxEl = document.getElementById('proximosPassos');
+                if (proxEl) proxEl.textContent = proximos || '';
 
                 // ATA completa: show raw text (trimmed of leading/trailing whitespace)
                 const ataEl = document.getElementById('ataText');
