@@ -2,6 +2,7 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Gerador de Atas</title>
     <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -39,6 +40,7 @@
 
             <button type="submit">Gerar ATA</button>
         </form>
+    <div id="ataError" style="color:#a00;margin-top:12px;display:none;"></div>
 
         <div id="ataResult" style="display:none;">
             <div class="ata-box">
@@ -80,15 +82,29 @@
             const fd = new FormData(form);
             form.querySelector('button[type="submit"]').disabled = true;
             document.getElementById('ataResult').style.display = 'none';
-            const res = await fetch('/gerar_ata', { method: 'POST', body: fd });
-            const data = await res.json();
+            let data;
+            try {
+                const res = await fetch('/gerar_ata', { method: 'POST', body: fd });
+                data = await res.json();
+                if (!res.ok) {
+                    const err = data && data.error ? data.error : `HTTP ${res.status}`;
+                    showError(err);
+                    form.querySelector('button[type="submit"]').disabled = false;
+                    return;
+                }
+            } catch (err) {
+                showError(err.message || String(err));
+                form.querySelector('button[type="submit"]').disabled = false;
+                return;
+            }
             // Pass form values so we can construct a deterministic filename
             const formData = {
                 data: form.querySelector('#data').value,
                 requerimento: form.querySelector('#requerimento').value,
                 titulo_issue: form.querySelector('#titulo_issue').value
             };
-            preencherCamposSeparados(data.ata, formData);
+                // Use backend-extracted fields when available
+                preencherCamposSeparados(data.ata, formData, data.titulo, data.proximos, data.corpo);
             document.getElementById('ataResult').style.display = 'block';
             form.querySelector('button[type="submit"]').disabled = false;
         };
@@ -97,34 +113,53 @@
                 return (str || '').replace(/\r/g, '').trim();
             }
 
-            // Extract first occurrence of a title line like "Título: ..." or "Titulo: ..."
+            function showError(msg) {
+                const el = document.getElementById('ataError');
+                if (!el) return;
+                el.textContent = msg;
+                el.style.display = 'block';
+                // hide result area when there's an error
+                document.getElementById('ataResult').style.display = 'none';
+            }
+
+            // Extract title from several possible formats:
+            // - "Título: ..."
+            // - a heading like "Título da ATA" followed by the actual title on the next line
+            // - fallback: first plausible short line after a 'Título' heading
             function extrairTituloDaAta(text) {
                 if (!text) return '';
-                // Normalize line endings and split
-                const lines = text.replace(/\r/g, '').split(/\n+/);
-                for (let ln of lines) {
-                    const l = ln.trim();
-                    // Match variations: Título:, Titulo:, Title:, case-insensitive
-                    const m = l.match(/^\s*(t[ií]tulo|title)\s*:\s*(.+)$/i);
-                    if (m) {
-                        return m[2].trim();
+                const normalized = text.replace(/\r/g, '');
+
+                // 1) Título: Some title
+                let m = normalized.match(/(?:^|\n)\s*(t[ií]tulo|title)\s*:\s*(.+)/i);
+                if (m) return m[2].split(/\n/)[0].trim();
+
+                // 2) Heading 'Título da ATA' (or 'Título da Ata') followed by a non-empty line with the title
+                m = normalized.match(/(?:^|\n)\s*(t[ií]tulo(?:\s+da\s+ata)?|title(?:\s+of\s+the\s+ata)?)\s*(?:\n)+\s*(.+)/i);
+                if (m) return m[2].split(/\n/)[0].trim();
+
+                // 3) Some generators put 'Título da ATA' and then 'Sessão ...' on the same block; try to find a short line that looks like a title
+                const lines = normalized.split(/\n+/).map(s => s.trim()).filter(Boolean);
+                for (let i = 0; i < lines.length; i++) {
+                    if (/^t[ií]tulo(?:\s+da\s+ata)?$/i.test(lines[i]) && lines[i+1]) {
+                        return lines[i+1].trim();
                     }
                 }
+
                 return '';
             }
 
-            // Extract the "Próximos passo(s):" section. Capture content after the label until a blank line or end.
+            // Extract the "Próximos passo(s)" section. Accepts label with or without colon and captures until blank line or end.
             function extrairProximosPassosDaAta(text) {
                 if (!text) return '';
-                // Normalize line endings
                 const normalized = text.replace(/\r/g, '');
-                // Look for the label (singular/plural, with/without accent)
-                const re = /(?:^|\n)\s*(pr[oó]ximos?\s+passo?s?)\s*:\s*(?:\n)?([\s\S]*?)(?=(\n\s*\n)|$)/i;
+                const re = /(?:^|\n)\s*(pr[oó]ximos?\s+passo?s?)\s*:?[\s\n]*([\s\S]*?)(?=(\n\s*\n)|$)/i;
                 const m = normalized.match(re);
-                if (m) {
-                    // m[2] contains the block until the next blank line or end
-                    return m[2].trim();
-                }
+                if (m) return m[2].trim();
+                // Sometimes generator writes 'Próximos passo' followed by lines starting with a dash; try a less strict search
+                const re2 = /(?:^|\n)\s*(pr[oó]ximos?\s+passo?s?)\s*(?:\n)([\s\S]*?)(?=(\n\s*\n)|$)/i;
+                const m2 = normalized.match(re2);
+                if (m2) return m2[2].trim();
                 return '';
             }
 
@@ -168,20 +203,37 @@
                 const nomeArquivo = construirNomeArquivo(formData, '');
                 const nomeEl = document.getElementById('nomeArquivo');
                 if (nomeEl) nomeEl.textContent = nomeArquivo;
+                    // Use backend-provided title/proximos/corpo when present, otherwise fallback to client extraction
+                    const tituloEl = document.getElementById('tituloAta');
+                    const tituloFinal = (arguments.length >= 3 && arguments[2]) ? arguments[2] : extrairTituloDaAta(ata);
+                    if (tituloEl) tituloEl.textContent = tituloFinal || '';
 
-                // Extrair o título da ATA (linha que começa com "Título:") e preencher o campo separado
-                const tituloExtraido = extrairTituloDaAta(ata);
-                const tituloEl = document.getElementById('tituloAta');
-                if (tituloEl) tituloEl.textContent = tituloExtraido || '';
-
-                // Extrair Próximos passos e preencher o campo (se houver)
-                const proximos = extrairProximosPassosDaAta(ata);
-                const proxEl = document.getElementById('proximosPassos');
-                if (proxEl) proxEl.textContent = proximos || '';
+                    const proxEl = document.getElementById('proximosPassos');
+                    const proximosFinal = (arguments.length >= 4 && arguments[3]) ? arguments[3] : extrairProximosPassosDaAta(ata);
+                    if (proxEl) proxEl.textContent = proximosFinal || '';
 
                 // ATA completa: show raw text (trimmed of leading/trailing whitespace)
                 const ataEl = document.getElementById('ataText');
-                if (ataEl) ataEl.textContent = ata.trim();
+                if (ataEl) {
+                    // Prefer extracting the main body starting at 'Objetivo:' if present
+                    const corpoBackend = (arguments.length >= 5 && arguments[4]) ? arguments[4] : '';
+                    const corpo = corpoBackend || extrairCorpoPrincipalDaAta(ata);
+                    ataEl.textContent = (corpo || ata).trim();
+                }
+            }
+
+            // Extract main body starting at 'Objetivo:' (or 'Objetivo') until the next top-level section
+            // Captures from the first occurrence of 'Objetivo' label to either a double line break or end.
+            function extrairCorpoPrincipalDaAta(text) {
+                if (!text) return '';
+                const normalized = text.replace(/\r/g, '');
+                // Capture from 'Objetivo:' until the next 'Próximos' section (or end of text).
+                const re = /(?:^|\n)\s*objetivo\s*:?\s*([\s\S]*?)(?=(?:\n\s*(?:pr[oó]ximos?\b)|$))/i;
+                const m = normalized.match(re);
+                if (m && m[1]) {
+                    return `Objetivo:\n${m[1].trim()}`;
+                }
+                return '';
             }
 
             function copyCampo(id) {
