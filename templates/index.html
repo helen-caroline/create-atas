@@ -9,11 +9,24 @@
     <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-        <div class="app-root">
-            <div class="container">
-                <div class="left-pane">
-                    <div class="form-card">
-                        <h2>Gerador de Atas</h2>
+    <div class="header">
+        <div class="header-content">
+            <div class="header-title">
+                <i class="fa fa-file-text"></i>
+                <h1>Gerador de Atas</h1>
+            </div>
+            <a href="/pipeline" class="pipeline-btn">
+                <i class="fa fa-cogs"></i>
+                Pipeline Cards
+            </a>
+        </div>
+    </div>
+
+    <div class="app-root">
+        <div class="container">
+            <div class="left-pane">
+                <div class="form-card">
+                    <h2>Gerador de Atas</h2>
                         <form id="ataForm">
                             <label for="data">Data</label>
                             <!-- Use native date picker; normalize server-provided `{{ hoje }}` to YYYY-MM-DD if needed -->

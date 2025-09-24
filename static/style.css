@@ -17,28 +17,145 @@ body {
 	-moz-osx-font-smoothing:grayscale;
 }
 
+/* Tab Navigation */
+.header {
+	background: rgba(10, 16, 26, 0.8);
+	border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+	padding: 16px 0;
+	backdrop-filter: blur(10px);
+}
+
+.header-content {
+	max-width: 1400px;
+	margin: 0 auto;
+	padding: 0 32px;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+}
+
+.header-title {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+}
+
+.header-title i {
+	color: var(--accent);
+	font-size: 24px;
+}
+
+.header-title h1 {
+	margin: 0;
+	font-size: 24px;
+	font-weight: 700;
+	color: #fff;
+}
+
+.pipeline-btn {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 10px 16px;
+	background: rgba(94, 234, 212, 0.1);
+	border: 1px solid rgba(94, 234, 212, 0.3);
+	border-radius: 8px;
+	color: var(--accent);
+	text-decoration: none;
+	transition: all 0.3s ease;
+	font-size: 14px;
+	font-weight: 500;
+}
+
+.pipeline-btn:hover {
+	background: rgba(94, 234, 212, 0.2);
+	transform: translateY(-1px);
+}
+
+.tab-navigation {
+	display: flex;
+	background: rgba(10,16,26,0.5);
+	border-bottom: 1px solid rgba(255,255,255,0.1);
+	padding: 0 20px;
+	gap: 0;
+}
+
+.tab-btn {
+	background: none;
+	border: none;
+	color: var(--muted);
+	padding: 15px 25px;
+	cursor: pointer;
+	transition: all 0.3s ease;
+	border-bottom: 3px solid transparent;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	font-size: 14px;
+	font-weight: 500;
+}
+
+.tab-btn:hover {
+	color: #e6eef6;
+	background: rgba(255,255,255,0.05);
+}
+
+.tab-btn.active {
+	color: var(--accent);
+	border-bottom-color: var(--accent);
+	background: rgba(94,234,212,0.1);
+}
+
+.tab-btn i {
+	font-size: 16px;
+}
+
 /* Center the app and make it full viewport height */
 .app-root{
-	min-height:100vh;
-	display:flex;
-	align-items:center;
-	justify-content:center;
-	padding:32px;
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	padding: 32px;
+}
+
+/* Tab Content */
+.tab-content {
+	display: none;
+	flex: 1;
+	min-height: 0;
+}
+
+.tab-content.active {
+	display: flex;
+	flex-direction: column;
+}
+
+.tab-content .container {
+	flex: 1;
+	min-height: 0;
 }
 
 .container {
 	/* full-bleed container that fills viewport */
-	width:100vw;
-	height:100vh;
+	width:100%;
+	height:100%;
 	margin:0;
 	background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
 	border-radius:0;
 	box-shadow: none;
 	display:grid;
 	grid-template-columns: 420px 1fr;
-	gap:24px;
-	padding:40px 48px;
-	overflow:hidden; /* prevent body scroll; internal regions will scroll */
+	gap:0;
+	padding: 32px;
+	box-sizing: border-box;
+}
+
+@media (max-width: 1024px) {
+	.container {
+		grid-template-columns: 1fr;
+		grid-template-rows: auto 1fr;
+		gap: 20px;
+	}
 }
 
 h2 { font-weight: 700; margin: 0 0 12px 0; color: #fff; font-size:20px }
@@ -82,6 +199,61 @@ button:hover{transform:translateY(-2px)}
 button:disabled { background: #344154; opacity:0.7; cursor:not-allowed }
 
 .muted { color:var(--muted); font-size:13px }
+
+/* Pipeline specific styles */
+.pipeline-buttons {
+	display: flex;
+	gap: 12px;
+	margin-top: 16px;
+}
+
+.pipeline-buttons button {
+	flex: 1;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+}
+
+.pipeline-status {
+	padding: 20px;
+	background: rgba(255,255,255,0.02);
+	border-radius: 8px;
+	border: 1px solid rgba(255,255,255,0.05);
+	margin-bottom: 20px;
+}
+
+.pipeline-info {
+	padding: 20px;
+	background: rgba(255,255,255,0.02);
+	border-radius: 8px;
+	border: 1px solid rgba(255,255,255,0.05);
+}
+
+.pipeline-info h4 {
+	margin: 0 0 12px 0;
+	color: var(--accent);
+	font-size: 16px;
+}
+
+.pipeline-link {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	color: var(--primary);
+	text-decoration: none;
+	margin-top: 12px;
+	padding: 8px 12px;
+	border-radius: 6px;
+	background: rgba(96,165,250,0.1);
+	border: 1px solid rgba(96,165,250,0.2);
+	transition: all 0.3s ease;
+}
+
+.pipeline-link:hover {
+	background: rgba(96,165,250,0.2);
+	transform: translateY(-1px);
+}
 
 /* Right column (result) */
 .right-pane{display:flex;flex-direction:column;gap:12px;overflow:hidden}

@@ -4,9 +4,17 @@ from openai import OpenAI
 from dotenv import load_dotenv
 from datetime import datetime
 import re
+import requests
+import base64
 
 load_dotenv()
 HF_TOKEN = os.getenv("HF_TOKEN", "")
+AZURE_DEVOPS_TOKEN = os.getenv("AZURE_DEVOPS_TOKEN", "")
+AZURE_DEVOPS_ORG = os.getenv("AZURE_DEVOPS_ORG", "koniasamples")
+AZURE_DEVOPS_PROJECT = os.getenv("AZURE_DEVOPS_PROJECT", "POCS")
+AZURE_DEVOPS_REPO = os.getenv("AZURE_DEVOPS_REPO", "AutomacaoCards")
+PIPELINE_ID = os.getenv("PIPELINE_ID", "556")
+
 client = OpenAI(
     base_url="https://router.huggingface.co/v1",
     api_key=HF_TOKEN
@@ -40,6 +48,11 @@ Gere a ata preenchida conforme as regras do template, com tópicos e contexto de
 def index():
     hoje = datetime.now().strftime("%d-%m-%Y")
     return render_template("index.html", hoje=hoje)
+
+@app.route("/pipeline")
+def pipeline():
+    """Página separada para gerenciar pipeline"""
+    return render_template("pipeline.html")
 
 @app.route("/gerar_ata", methods=["POST"])
 def gerar_ata_route():
@@ -98,6 +111,143 @@ def gerar_ata_route():
     corpo = extrair_corpo_principal_da_ata(ata)
 
     return jsonify({"ata": ata, "titulo": titulo_extraido, "proximos": proximos, "corpo": corpo})
+
+@app.route("/get_pipeline_file", methods=["GET"])
+def get_pipeline_file():
+    """Obtém o conteúdo atual do arquivo cards.txt"""
+    if not AZURE_DEVOPS_TOKEN:
+        return jsonify({"error": "Token do Azure DevOps não configurado"}), 500
+    
+    try:
+        # URL da API para obter conteúdo do arquivo
+        api_url = f"https://dev.azure.com/{AZURE_DEVOPS_ORG}/{AZURE_DEVOPS_PROJECT}/_apis/git/repositories/{AZURE_DEVOPS_REPO}/items"
+        
+        # Headers da requisição
+        auth_string = base64.b64encode(f':{AZURE_DEVOPS_TOKEN}'.encode()).decode()
+        headers = {
+            "Authorization": f"Basic {auth_string}",
+            "Accept": "application/json"
+        }
+        
+        # Parâmetros para obter o arquivo cards.txt da branch helen.santos.v2
+        params = {
+            "path": "/cards.txt",
+            "version": "helen.santos.v2",
+            "versionType": "branch",
+            "api-version": "7.0",
+            "$format": "text"
+        }
+        
+        response = requests.get(api_url, headers=headers, params=params)
+        
+        if response.status_code == 200:
+            return jsonify({"content": response.text})
+        elif response.status_code == 404:
+            return jsonify({"content": ""})  # Arquivo não existe ainda
+        else:
+            # Retornar informações detalhadas do erro para debug
+            return jsonify({
+                "error": f"Erro {response.status_code} da API do Azure DevOps",
+                "details": response.text,
+                "url": f"{api_url}?{requests.compat.urlencode(params)}"
+            }), 500
+            
+    except Exception as e:
+        return jsonify({
+            "error": f"Erro interno: {str(e)}",
+            "type": type(e).__name__
+        }), 500
+
+@app.route("/save_pipeline_file", methods=["POST"])
+def save_pipeline_file():
+    """Salva o conteúdo do arquivo cards.txt no repositório Azure DevOps"""
+    if not AZURE_DEVOPS_TOKEN:
+        return jsonify({"error": "Token do Azure DevOps não configurado"}), 500
+    
+    try:
+        data = request.get_json()
+        content = data.get("content", "")
+        
+        if not content.strip():
+            return jsonify({"error": "Conteúdo não pode estar vazio"}), 400
+        
+        # URL simplificada da API para criar/atualizar arquivo
+        api_url = f"https://dev.azure.com/{AZURE_DEVOPS_ORG}/{AZURE_DEVOPS_PROJECT}/_apis/git/repositories/{AZURE_DEVOPS_REPO}/items"
+        
+        # Headers da requisição
+        auth_string = base64.b64encode(f':{AZURE_DEVOPS_TOKEN}'.encode()).decode()
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Basic {auth_string}"
+        }
+        
+        # Parâmetros para criar/atualizar o arquivo
+        params = {
+            "path": "/cards.txt",
+            "version": "helen.santos.v2",
+            "versionType": "branch",
+            "api-version": "7.0"
+        }
+        
+        # Payload simplificado
+        payload = {
+            "content": content,
+            "message": "Atualizar cards.txt via painel web"
+        }
+        
+        response = requests.put(f"{api_url}?{'&'.join([f'{k}={v}' for k, v in params.items()])}", 
+                               json=payload, headers=headers)
+        
+        if response.status_code in [200, 201]:
+            return jsonify({"success": True, "message": "Arquivo salvo com sucesso"})
+        else:
+            return jsonify({"error": f"Erro da API: {response.status_code} - {response.text}"}), 500
+            
+    except Exception as e:
+        return jsonify({"error": f"Erro interno: {str(e)}"}), 500
+
+@app.route("/run_pipeline", methods=["POST"])
+def run_pipeline():
+    """Executa a pipeline do Azure DevOps"""
+    if not AZURE_DEVOPS_TOKEN:
+        return jsonify({"error": "Token do Azure DevOps não configurado"}), 500
+    
+    try:
+        # URL da API do Azure DevOps para executar pipeline
+        api_url = f"https://dev.azure.com/{AZURE_DEVOPS_ORG}/{AZURE_DEVOPS_PROJECT}/_apis/pipelines/{PIPELINE_ID}/runs"
+        
+        # Headers da requisição
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Basic {base64.b64encode(f':{AZURE_DEVOPS_TOKEN}'.encode()).decode()}"
+        }
+        
+        # Payload para executar a pipeline na branch helen.santos.v2
+        payload = {
+            "resources": {
+                "repositories": {
+                    "self": {
+                        "refName": "refs/heads/helen.santos.v2"
+                    }
+                }
+            }
+        }
+        
+        response = requests.post(api_url, json=payload, headers=headers)
+        
+        if response.status_code == 200:
+            build_data = response.json()
+            return jsonify({
+                "success": True,
+                "buildId": build_data.get("id"),
+                "buildUrl": build_data.get("url"),
+                "status": build_data.get("state", "queued")
+            })
+        else:
+            return jsonify({"error": f"Erro ao executar pipeline: {response.text}"}), 500
+            
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":
     # Allow overriding the port via PORT env var. Default to 5000 to avoid common macOS conflicts on 5000.

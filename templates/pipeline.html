@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Pipeline Cards - Azure DevOps</title>
+    <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/static/pipeline.css">
+</head>
+<body>
+    <div class="pipeline-root">
+        <div class="header">
+            <div class="header-content">
+                <div class="header-title">
+                    <i class="fa fa-cogs"></i>
+                    <h1>Pipeline Cards</h1>
+                </div>
+                <a href="/" class="back-btn">
+                    <i class="fa fa-arrow-left"></i>
+                    Voltar para Atas
+                </a>
+            </div>
+        </div>
+
+        <div class="container">
+            <div class="left-pane">
+                <div class="form-card">
+                    <h2>Gerenciar Cards</h2>
+                    <p class="small-note">Edite o arquivo cards.txt e execute a pipeline do Azure DevOps</p>
+                    
+                    <div class="file-actions">
+                        <button type="button" onclick="loadPipelineFile()" class="load-btn">
+                            <i class="fa fa-refresh"></i>
+                            Carregar Arquivo Atual
+                        </button>
+                    </div>
+                    
+                    <label for="cards-content">Conteúdo do arquivo cards.txt</label>
+                    <textarea id="cards-content" name="cards-content" rows="15" placeholder="Digite aqui o conteúdo do arquivo cards.txt...
+
+Formato esperado (uma linha por card):
+NÚMERO NOME;TÍTULO_DA_TASK;HORAS;;REQUERIMENTO
+
+Exemplos:
+1 Helen Caroline da Silva Santos;Dailys - Sprint 236;4;;89016
+2 Helen Caroline da Silva Santos;[Konia]_Review_(Sprint_235)_-_Planning_Sprint_236;1;;89017
+3 Helen Caroline da Silva Santos;[Anima]_Levantamento_e_Extrações_GitLab;30;;89043
+4 Helen Caroline da Silva Santos;[ECAD] Validação dos processos;14;;85504"></textarea>
+
+                    <div class="pipeline-buttons">
+                        <button type="button" id="savePipelineBtn" onclick="savePipelineFile()">
+                            <i class="fa fa-save"></i>
+                            Salvar no Repositório
+                        </button>
+                        <button type="button" id="runPipelineBtn" onclick="runPipeline()">
+                            <i class="fa fa-play"></i>
+                            Executar Pipeline
+                        </button>
+                    </div>
+                    
+                    <div id="pipelineError" class="message error" style="display:none;"></div>
+                    <div id="pipelineSuccess" class="message success" style="display:none;"></div>
+                </div>
+            </div>
+            
+            <div class="right-pane">
+                <div class="status-card">
+                    <h3><i class="fa fa-chart-line"></i> Status da Pipeline</h3>
+                    <div id="pipelineStatus" class="pipeline-status">
+                        <div class="status-placeholder">
+                            <i class="fa fa-info-circle"></i>
+                            <p>Execute uma ação para ver o status aqui</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="info-card">
+                    <h4><i class="fa fa-info-circle"></i> Informações do Projeto</h4>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <strong>Organização:</strong>
+                            <span>koniasamples</span>
+                        </div>
+                        <div class="info-item">
+                            <strong>Projeto:</strong>
+                            <span>POCS</span>
+                        </div>
+                        <div class="info-item">
+                            <strong>Repositório:</strong>
+                            <span>AutomacaoCards</span>
+                        </div>
+                        <div class="info-item">
+                            <strong>Branch:</strong>
+                            <span>helen.santos.v2</span>
+                        </div>
+                        <div class="info-item">
+                            <strong>Pipeline ID:</strong>
+                            <span>556</span>
+                        </div>
+                    </div>
+                    
+                    <div class="external-links">
+                        <a href="https://dev.azure.com/koniasamples/POCS/_build?definitionId=556&_a=summary" 
+                           target="_blank" class="external-link">
+                            <i class="fa fa-external-link"></i>
+                            Ver Pipeline no Azure DevOps
+                        </a>
+                        
+                        <a href="https://dev.azure.com/koniasamples/POCS/_git/AutomacaoCards?version=GBhelen.santos.v2" 
+                           target="_blank" class="external-link">
+                            <i class="fa fa-code-branch"></i>
+                            Ver Repositório no Azure DevOps
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/pipeline.js"></script>
+    
+    <!-- Toast notification -->
+    <div id="toast" aria-live="polite" aria-atomic="true" style="display:none"></div>
+</body>
+</html>
