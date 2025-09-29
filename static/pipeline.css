@@ -218,9 +218,9 @@
     border: 2px solid var(--border-color, #e2e8f0);
     background: var(--card-bg, #ffffff);
     color: var(--text-primary, #1e293b);
-    font-size: 0.8125rem;
-    font-family: 'JetBrains Mono', 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, monospace;
-    line-height: 1.6;
+    font-size: 0.6875rem !important;
+    font-family: 'JetBrains Mono', 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, monospace !important;
+    line-height: 1.4 !important;
     resize: vertical;
     transition: all 0.2s ease;
     box-sizing: border-box;
@@ -234,6 +234,16 @@
 
 .pipeline-root textarea::placeholder {
     color: var(--text-secondary, #64748b);
+}
+
+/* Force small font size for textarea content */
+.pipeline-root .container textarea,
+.pipeline-root .form-card textarea,
+textarea[name="content"],
+#pipelineContent {
+    font-size: 0.625rem !important;
+    line-height: 1.3 !important;
+    font-family: 'SF Mono', 'Monaco', 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace !important;
 }
 
 /* Modern buttons for pipeline */
