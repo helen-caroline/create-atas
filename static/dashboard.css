@@ -864,8 +864,9 @@ input:focus, textarea:focus {
     gap: 0.5rem;
     padding: 0;
     box-sizing: border-box;
-    min-height: calc(100vh - 120px);
-    height: calc(100vh - 120px);
+    min-height: calc(100vh - 140px);
+    height: calc(100vh - 140px);
+    margin-bottom: 1rem;
 }
 
 @media (max-width: 1200px) {
@@ -892,15 +893,15 @@ input:focus, textarea:focus {
 .left-pane {
     display: flex;
     flex-direction: column;
-    gap: 0.25rem;
+    gap: 0.5rem;
     overflow: auto;
-    padding-right: 0.25rem;
+    padding-right: 0.5rem;
     height: 100%;
 }
 
 .form-card {
     background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
-    padding: 0.75rem;
+    padding: 1rem;
     border-radius: 0.75rem;
     border: 1px solid var(--border-color);
     box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
@@ -936,8 +937,8 @@ input:focus, textarea:focus {
 
 .form-card h2 {
     color: var(--text-primary) !important;
-    margin-bottom: 0.5rem;
-    font-size: 1.25rem;
+    margin-bottom: 0.75rem;
+    font-size: 1.125rem;
     font-weight: 700;
     background: none !important;
     -webkit-background-clip: initial !important;
@@ -947,8 +948,8 @@ input:focus, textarea:focus {
 
 .form-card label {
     font-weight: 600;
-    margin-top: 0.25rem;
-    margin-bottom: 0.125rem;
+    margin-top: 0.5rem;
+    margin-bottom: 0.25rem;
     display: block;
     color: var(--text-secondary);
     font-size: 0.875rem;
@@ -985,7 +986,7 @@ input:focus, textarea:focus {
     font-weight: 600;
     cursor: pointer;
     transition: all 0.3s ease;
-    margin-top: 0.5rem;
+    margin-top: 0.75rem;
     font-size: 0.875rem;
     box-shadow: 0 4px 6px -1px rgb(37 99 235 / 0.3);
     position: relative;
@@ -1043,7 +1044,7 @@ button[type="submit"] {
 .right-pane {
     display: flex;
     flex-direction: column;
-    gap: 0.25rem;
+    gap: 0.5rem;
     height: 100%;
 }
 
@@ -1051,7 +1052,7 @@ button[type="submit"] {
     background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
     border: 1px solid var(--border-color);
     border-radius: 0.75rem;
-    padding: 0.75rem;
+    padding: 1rem;
     box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
     flex: 1;
     display: flex;
@@ -1110,7 +1111,7 @@ button[type="submit"] {
 .form-card textarea {
     width: 100%;
     flex: 1;
-    min-height: 200px;
+    min-height: 120px;
     padding: 0.75rem;
     border: 2px solid var(--border-color);
     border-radius: 0.5rem;
@@ -1120,7 +1121,7 @@ button[type="submit"] {
     transition: all 0.3s ease;
     background: linear-gradient(145deg, #ffffff 0%, #f9fafb 100%);
     margin-top: 0.125rem;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.75rem;
     box-shadow: inset 0 1px 2px 0 rgb(0 0 0 / 0.05);
 }
 
