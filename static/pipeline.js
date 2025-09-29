@@ -100,20 +100,85 @@ async function runPipeline() {
         
         const data = await response.json();
         
-        if (response.ok) {
-            showSuccess('Pipeline executada com sucesso!');
-            updateStatus('success', 'Pipeline executada com sucesso', data);
+        if (response.ok && data.buildId) {
+            showSuccess('Pipeline iniciada com sucesso!');
+            updateStatus('polling', 'Pipeline iniciada, acompanhando progresso...', {
+                buildId: data.buildId,
+                buildUrl: data.buildUrl
+            });
+            
+            // Iniciar polling do status da pipeline
+            startPipelinePolling(data.buildId);
+            
         } else {
             showError(data.error || 'Erro ao executar pipeline');
             updateStatus('error', 'Erro ao executar pipeline', { error: data.error });
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa fa-play"></i> Executar Pipeline';
         }
     } catch (error) {
         showError('Erro de conexão: ' + error.message);
         updateStatus('error', 'Erro de conexão', { error: error.message });
-    } finally {
         btn.disabled = false;
         btn.innerHTML = '<i class="fa fa-play"></i> Executar Pipeline';
     }
+}
+
+// Start polling pipeline status
+function startPipelinePolling(buildId) {
+    let pollCount = 0;
+    const maxPolls = 120; // 10 minutos máximo (5s * 120)
+    
+    const pollInterval = setInterval(async () => {
+        pollCount++;
+        
+        try {
+            const response = await fetch(`/pipeline_status/${buildId}`);
+            const data = await response.json();
+            
+            if (response.ok) {
+                const status = data.status;
+                const result = data.result;
+                const isCompleted = data.isCompleted;
+                
+                // Atualizar status na interface
+                if (isCompleted) {
+                    clearInterval(pollInterval);
+                    
+                    const btn = document.getElementById('runPipelineBtn');
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fa fa-play"></i> Executar Pipeline';
+                    
+                    if (result === 'sucesso') {
+                        showSuccess('Pipeline concluída com sucesso!');
+                        updateStatus('success', 'Pipeline concluída com sucesso', data);
+                    } else {
+                        showError(`Pipeline falhou: ${result}`);
+                        updateStatus('error', `Pipeline falhou: ${result}`, data);
+                    }
+                } else {
+                    // Pipeline ainda executando
+                    updateStatus('polling', `Pipeline ${status}...`, data);
+                }
+            } else {
+                console.warn('Erro ao consultar status:', data.error);
+            }
+        } catch (error) {
+            console.warn('Erro no polling:', error.message);
+        }
+        
+        // Parar polling se exceder limite de tempo
+        if (pollCount >= maxPolls) {
+            clearInterval(pollInterval);
+            const btn = document.getElementById('runPipelineBtn');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa fa-play"></i> Executar Pipeline';
+            
+            showError('Timeout: Pipeline demorou mais que o esperado');
+            updateStatus('error', 'Timeout na consulta do status da pipeline');
+        }
+        
+    }, 5000); // Poll a cada 5 segundos
 }
 
 // Update status display
@@ -171,6 +236,23 @@ function updateStatus(type, message, data = {}) {
                 <div class="status-item status-running">
                     <i class="fa fa-spinner fa-spin"></i>
                     <span>${message}</span>
+                </div>
+            `;
+            break;
+            
+        case 'polling':
+            content = `
+                <div class="status-item status-running">
+                    <i class="fa fa-spinner fa-spin"></i>
+                    <span>${message}</span>
+                </div>
+                <div class="status-details">
+                    ${data.buildId ? `<div><strong>Build ID:</strong> ${data.buildId}</div>` : ''}
+                    ${data.status ? `<div><strong>Status atual:</strong> ${data.status}</div>` : ''}
+                    ${data.buildNumber ? `<div><strong>Build:</strong> ${data.buildNumber}</div>` : ''}
+                    ${data.startTime ? `<div><strong>Iniciado em:</strong> ${new Date(data.startTime).toLocaleString()}</div>` : ''}
+                    ${data.buildUrl ? `<div><a href="${data.buildUrl}" target="_blank" class="status-link"><i class="fa fa-external-link"></i> Ver no Azure DevOps</a></div>` : ''}
+                    <div><small><i class="fa fa-clock"></i> Última atualização: ${new Date().toLocaleString()}</small></div>
                 </div>
             `;
             break;

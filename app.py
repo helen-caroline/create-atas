@@ -283,6 +283,69 @@ def run_pipeline():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@app.route("/pipeline_status/<int:build_id>", methods=["GET"])
+def pipeline_status(build_id):
+    """Consulta o status atual de uma pipeline em execução"""
+    if not AZURE_DEVOPS_TOKEN:
+        return jsonify({"error": "Token do Azure DevOps não configurado"}), 500
+    
+    try:
+        # URL da API do Azure DevOps para consultar status da pipeline
+        api_url = f"https://dev.azure.com/{AZURE_DEVOPS_ORG}/{AZURE_DEVOPS_PROJECT}/_apis/build/builds/{build_id}"
+        
+        # Headers da requisição
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Basic {base64.b64encode(f':{AZURE_DEVOPS_TOKEN}'.encode()).decode()}"
+        }
+        
+        # Parâmetros da API
+        params = {
+            "api-version": "7.0"
+        }
+        
+        response = requests.get(api_url, headers=headers, params=params)
+        
+        if response.status_code == 200:
+            build_data = response.json()
+            
+            # Mapear status para português e adicionar informações úteis
+            status_map = {
+                "notStarted": "na fila",
+                "inProgress": "executando", 
+                "completed": "concluída",
+                "cancelling": "cancelando",
+                "postponed": "adiada"
+            }
+            
+            result_map = {
+                "succeeded": "sucesso",
+                "failed": "falhou",
+                "canceled": "cancelada",
+                "partiallySucceeded": "parcialmente bem-sucedida"
+            }
+            
+            status = build_data.get("status", "unknown")
+            result = build_data.get("result", None)
+            
+            return jsonify({
+                "success": True,
+                "buildId": build_data.get("id"),
+                "status": status_map.get(status, status),
+                "result": result_map.get(result, result) if result else None,
+                "buildUrl": build_data.get("_links", {}).get("web", {}).get("href", ""),
+                "startTime": build_data.get("startTime"),
+                "finishTime": build_data.get("finishTime"),
+                "queueTime": build_data.get("queueTime"),
+                "buildNumber": build_data.get("buildNumber"),
+                "isCompleted": status == "completed"
+            })
+        else:
+            return jsonify({"error": f"Erro ao consultar status: {response.text}"}), 500
+            
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 if __name__ == "__main__":
     # Allow overriding the port via PORT env var. Default to 5000 to avoid common macOS conflicts on 5000.
     port = int(os.environ.get("PORT", "5001"))
