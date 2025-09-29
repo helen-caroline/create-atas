@@ -3,27 +3,77 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Pipeline Cards - Azure DevOps</title>
+    <title>Pipeline Cards - Create ATAs</title>
     <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/static/dashboard.css">
     <link rel="stylesheet" href="/static/pipeline.css">
 </head>
 <body>
-    <div class="pipeline-root">
-        <div class="header">
-            <div class="header-content">
-                <div class="header-title">
-                    <i class="fa fa-cogs"></i>
+    <div class="app-wrapper">
+        <!-- Sidebar -->
+        <nav class="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo">
+                    <i class="fas fa-file-text"></i>
+                    <h2>Create ATAs</h2>
+                </div>
+                <button class="sidebar-toggle" id="sidebarToggle">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </div>
+            
+            <ul class="sidebar-menu">
+                <li class="menu-item">
+                    <a href="/" class="menu-link">
+                        <i class="fas fa-home"></i>
+                        <span>Dashboard</span>
+                    </a>
+                </li>
+                <li class="menu-item">
+                    <a href="/atas" class="menu-link">
+                        <i class="fas fa-file-alt"></i>
+                        <span>Gerador de ATAs</span>
+                    </a>
+                </li>
+                <li class="menu-item active">
+                    <a href="/pipeline" class="menu-link">
+                        <i class="fas fa-cogs"></i>
+                        <span>Pipeline Cards</span>
+                    </a>
+                </li>
+            </ul>
+            
+            <div class="sidebar-footer">
+                <div class="user-info">
+                    <i class="fas fa-user-circle"></i>
+                    <span>Admin</span>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Header -->
+            <header class="main-header">
+                <div class="header-left">
+                    <button class="mobile-menu-toggle" id="mobileMenuToggle">
+                        <i class="fas fa-bars"></i>
+                    </button>
                     <h1>Pipeline Cards</h1>
                 </div>
-                <a href="/" class="back-btn">
-                    <i class="fa fa-arrow-left"></i>
-                    Voltar para Atas
-                </a>
-            </div>
-        </div>
+                <div class="header-right">
+                    <div class="date-info">
+                        <i class="fas fa-calendar"></i>
+                        <span id="currentDate"></span>
+                    </div>
+                </div>
+            </header>
 
-        <div class="container">
+            <!-- Pipeline Content -->
+            <div class="dashboard-container">
+                <div class="pipeline-root">
+                    <div class="container">
             <div class="left-pane">
                 <div class="form-card">
                     <h2>Gerenciar Cards</h2>
@@ -112,12 +162,14 @@ Exemplos:
                             <i class="fa fa-code-branch"></i>
                             Ver Repositório no Azure DevOps
                         </a>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
+        </main>
     </div>
 
+    <script src="/static/dashboard.js"></script>
     <script src="/static/pipeline.js"></script>
     
     <!-- Toast notification -->

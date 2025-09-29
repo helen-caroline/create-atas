@@ -3,7 +3,11 @@ document.getElementById('ataForm').onsubmit = async function(e) {
     const form = e.target;
     const fd = new FormData(form);
     form.querySelector('button[type="submit"]').disabled = true;
+    
+    // Hide both result and placeholder during loading
     document.getElementById('ataResult').style.display = 'none';
+    document.getElementById('resultPlaceholder').style.display = 'none';
+    
     let data;
     try {
         const res = await fetch('/gerar_ata', { method: 'POST', body: fd });
@@ -27,7 +31,10 @@ document.getElementById('ataForm').onsubmit = async function(e) {
     };
         // Use backend-extracted fields when available
         preencherCamposSeparados(data.ata, formData, data.titulo, data.proximos, data.corpo);
+    
+    // Show result and hide placeholder
     document.getElementById('ataResult').style.display = 'block';
+    document.getElementById('resultPlaceholder').style.display = 'none';
     form.querySelector('button[type="submit"]').disabled = false;
 };
 
@@ -40,8 +47,9 @@ document.getElementById('ataForm').onsubmit = async function(e) {
         if (!el) return;
         el.textContent = msg;
         el.style.display = 'block';
-        // hide result area when there's an error
+        // hide result area and show placeholder when there's an error
         document.getElementById('ataResult').style.display = 'none';
+        document.getElementById('resultPlaceholder').style.display = 'flex';
     }
 
     // Extract title from several possible formats:

@@ -3,36 +3,84 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Gerador de Atas</title>
+    <title>Gerador de Atas - Create ATAs</title>
     <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="/static/dashboard.css">
 </head>
 <body>
-    <div class="header">
-        <div class="header-content">
-            <div class="header-title">
-                <i class="fa fa-file-text"></i>
-                <h1>Gerador de Atas</h1>
+    <div class="app-wrapper">
+        <!-- Sidebar -->
+        <nav class="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo">
+                    <i class="fas fa-file-text"></i>
+                    <h2>Create ATAs</h2>
+                </div>
+                <button class="sidebar-toggle" id="sidebarToggle">
+                    <i class="fas fa-bars"></i>
+                </button>
             </div>
-            <a href="/pipeline" class="pipeline-btn">
-                <i class="fa fa-cogs"></i>
-                Pipeline Cards
-            </a>
-        </div>
-    </div>
+            
+            <ul class="sidebar-menu">
+                <li class="menu-item">
+                    <a href="/" class="menu-link">
+                        <i class="fas fa-home"></i>
+                        <span>Dashboard</span>
+                    </a>
+                </li>
+                <li class="menu-item active">
+                    <a href="/atas" class="menu-link">
+                        <i class="fas fa-file-alt"></i>
+                        <span>Gerador de ATAs</span>
+                    </a>
+                </li>
+                <li class="menu-item">
+                    <a href="/pipeline" class="menu-link">
+                        <i class="fas fa-cogs"></i>
+                        <span>Pipeline Cards</span>
+                    </a>
+                </li>
+            </ul>
+            
+            <div class="sidebar-footer">
+                <div class="user-info">
+                    <i class="fas fa-user-circle"></i>
+                    <span>Admin</span>
+                </div>
+            </div>
+        </nav>
 
-    <div class="app-root">
-        <div class="container">
-            <div class="left-pane">
-                <div class="form-card">
-                    <h2>Gerador de Atas</h2>
-                        <form id="ataForm">
-                            <label for="data">Data</label>
-                            <!-- Use native date picker; normalize server-provided `{{ hoje }}` to YYYY-MM-DD if needed -->
-                            <input type="date" id="data" name="data" value="{{ hoje }}" required>
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Header -->
+            <header class="main-header">
+                <div class="header-left">
+                    <button class="mobile-menu-toggle" id="mobileMenuToggle">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <h1>Gerador de ATAs</h1>
+                </div>
+                <div class="header-right">
+                    <div class="date-info">
+                        <i class="fas fa-calendar"></i>
+                        <span id="currentDate"></span>
+                    </div>
+                </div>
+            </header>
 
-                            <label for="requerimento">Número do Requerimento</label>
+            <!-- ATA Generator Content -->
+            <div class="dashboard-container">
+                <div class="container">
+                    <div class="left-pane">
+                        <div class="form-card">
+                            <h2>Gerador de Atas</h2>
+                                <form id="ataForm">
+                        <label for="data">Data</label>
+                        <!-- Use native date picker; normalize server-provided `{{ hoje }}` to YYYY-MM-DD if needed -->
+                        <input type="date" id="data" name="data" value="{{ hoje }}" required>
+
+                        <label for="requerimento">Número do Requerimento</label>
                             <input type="text" id="requerimento" name="requerimento" required>
 
                             <label for="titulo_issue">Título da Issue (para o nome do arquivo)</label>
@@ -48,6 +96,14 @@
                 </div>
 
                 <div class="right-pane">
+                    <!-- Placeholder quando não há resultado -->
+                    <div id="resultPlaceholder" class="result-placeholder">
+                        <i class="fas fa-file-alt"></i>
+                        <h3>Sua ATA aparecerá aqui</h3>
+                        <p>Preencha o formulário ao lado e clique em "Gerar ATA" para ver o resultado</p>
+                    </div>
+                    
+                    <!-- Resultado da ATA -->
                     <div id="ataResult" style="display:none; height:100%;">
                         <div class="ata-box ata-content">
                             <div class="nome-row" style="margin-bottom:8px">
@@ -66,12 +122,16 @@
                                 <button class="copy-btn" style="position:absolute;top:18px;right:28px;z-index:2;" onclick="copyAta()" title="Copiar ATA completa"><i class="fa fa-copy"></i></button>
                                 <pre id="ataText" class="ata-pre"></pre>
                             </div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
-        <script src="/static/ata.js"></script>
+        </main>
+    </div>
+    
+    <script src="/static/dashboard.js"></script>
+    <script src="/static/ata.js"></script>
     <!-- toast notification -->
     <div id="toast" aria-live="polite" aria-atomic="true" style="display:none"></div>
 </body>

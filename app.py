@@ -45,7 +45,13 @@ Gere a ata preenchida conforme as regras do template, com tópicos e contexto de
     return completion.choices[0].message.content
 
 @app.route("/")
-def index():
+def home():
+    """Página home com dashboard"""
+    return render_template("home.html")
+
+@app.route("/atas")
+def atas():
+    """Página do gerador de ATAs"""
     hoje = datetime.now().strftime("%d-%m-%Y")
     return render_template("index.html", hoje=hoje)
 

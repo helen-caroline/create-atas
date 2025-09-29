@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Dashboard - Create ATAs</title>
+    <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/static/dashboard.css">
+</head>
+<body>
+    <div class="app-wrapper">
+        <!-- Sidebar -->
+        <nav class="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo">
+                    <i class="fas fa-file-text"></i>
+                    <h2>Create ATAs</h2>
+                </div>
+                <button class="sidebar-toggle" id="sidebarToggle">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </div>
+            
+            <ul class="sidebar-menu">
+                <li class="menu-item active">
+                    <a href="/" class="menu-link">
+                        <i class="fas fa-home"></i>
+                        <span>Dashboard</span>
+                    </a>
+                </li>
+                <li class="menu-item">
+                    <a href="/atas" class="menu-link">
+                        <i class="fas fa-file-alt"></i>
+                        <span>Gerador de ATAs</span>
+                    </a>
+                </li>
+                <li class="menu-item">
+                    <a href="/pipeline" class="menu-link">
+                        <i class="fas fa-cogs"></i>
+                        <span>Pipeline Cards</span>
+                    </a>
+                </li>
+            </ul>
+            
+            <div class="sidebar-footer">
+                <div class="user-info">
+                    <i class="fas fa-user-circle"></i>
+                    <span>Admin</span>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Header -->
+            <header class="main-header">
+                <div class="header-left">
+                    <button class="mobile-menu-toggle" id="mobileMenuToggle">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <h1>Dashboard</h1>
+                </div>
+                <div class="header-right">
+                    <div class="date-info">
+                        <i class="fas fa-calendar"></i>
+                        <span id="currentDate"></span>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Dashboard Content -->
+            <div class="dashboard-container">
+                <!-- Welcome Card -->
+                <div class="welcome-card">
+                    <div class="welcome-content">
+                        <div class="welcome-text">
+                            <h2>Bem-vindo ao Create ATAs</h2>
+                            <p>Gerencie suas ATAs e pipelines de forma eficiente</p>
+                        </div>
+                        <div class="welcome-icon">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="quick-actions">
+                    <h3>Ações Rápidas</h3>
+                    <div class="actions-grid">
+                        <div class="action-card">
+                            <div class="action-icon">
+                                <i class="fas fa-plus-circle"></i>
+                            </div>
+                            <div class="action-content">
+                                <h4>Nova ATA</h4>
+                                <p>Criar uma nova ata de reunião</p>
+                                <a href="/atas" class="action-btn">Criar ATA</a>
+                            </div>
+                        </div>
+                        
+                        <div class="action-card">
+                            <div class="action-icon">
+                                <i class="fas fa-rocket"></i>
+                            </div>
+                            <div class="action-content">
+                                <h4>Pipeline Cards</h4>
+                                <p>Gerenciar pipeline do Azure DevOps</p>
+                                <a href="/pipeline" class="action-btn">Abrir Pipeline</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Stats Cards (preparado para futuros dados) -->
+                <div class="stats-section">
+                    <h3>Estatísticas</h3>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-file-alt"></i>
+                            </div>
+                            <div class="stat-content">
+                                <h4>ATAs Criadas</h4>
+                                <span class="stat-number">-</span>
+                                <small>Este mês</small>
+                            </div>
+                        </div>
+                        
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-clock"></i>
+                            </div>
+                            <div class="stat-content">
+                                <h4>Pipelines</h4>
+                                <span class="stat-number">-</span>
+                                <small>Executadas hoje</small>
+                            </div>
+                        </div>
+                        
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-check-circle"></i>
+                            </div>
+                            <div class="stat-content">
+                                <h4>Status</h4>
+                                <span class="stat-number">OK</span>
+                                <small>Sistema</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Activities (preparado para futuros dados) -->
+                <div class="recent-section">
+                    <h3>Atividades Recentes</h3>
+                    <div class="activity-card">
+                        <div class="activity-placeholder">
+                            <i class="fas fa-info-circle"></i>
+                            <p>Nenhuma atividade recente disponível</p>
+                            <small>As atividades aparecerão aqui conforme você usar o sistema</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="/static/dashboard.js"></script>
+</body>
+</html>
