@@ -171,32 +171,61 @@ def save_pipeline_file():
         if not content.strip():
             return jsonify({"error": "Conteúdo não pode estar vazio"}), 400
         
-        # URL simplificada da API para criar/atualizar arquivo
-        api_url = f"https://dev.azure.com/{AZURE_DEVOPS_ORG}/{AZURE_DEVOPS_PROJECT}/_apis/git/repositories/{AZURE_DEVOPS_REPO}/items"
-        
-        # Headers da requisição
+        # Azure DevOps Git API requires push operations, not direct file updates
         auth_string = base64.b64encode(f':{AZURE_DEVOPS_TOKEN}'.encode()).decode()
         headers = {
             "Content-Type": "application/json",
             "Authorization": f"Basic {auth_string}"
         }
         
-        # Parâmetros para criar/atualizar o arquivo
-        params = {
-            "path": "/cards.txt",
-            "version": "helen.santos.v2",
-            "versionType": "branch",
-            "api-version": "7.0"
+        # First, get the current commit SHA of the branch
+        branch_api = f"https://dev.azure.com/{AZURE_DEVOPS_ORG}/{AZURE_DEVOPS_PROJECT}/_apis/git/repositories/{AZURE_DEVOPS_REPO}/refs"
+        params = {"filter": "heads/helen.santos.v2", "api-version": "7.0"}
+        branch_response = requests.get(branch_api, headers=headers, params=params)
+        
+        if branch_response.status_code != 200:
+            return jsonify({"error": f"Erro ao buscar branch: {branch_response.status_code} - {branch_response.text}"}), 500
+            
+        branch_data = branch_response.json()
+        if not branch_data.get("value"):
+            return jsonify({"error": "Branch helen.santos.v2 não encontrada"}), 404
+            
+        old_object_id = branch_data["value"][0]["objectId"]
+        
+        # Create push operation to update the file
+        push_api = f"https://dev.azure.com/{AZURE_DEVOPS_ORG}/{AZURE_DEVOPS_PROJECT}/_apis/git/repositories/{AZURE_DEVOPS_REPO}/pushes"
+        push_params = {"api-version": "7.0"}
+        
+        # Encode content to base64
+        content_b64 = base64.b64encode(content.encode('utf-8')).decode('utf-8')
+        
+        push_payload = {
+            "refUpdates": [
+                {
+                    "name": "refs/heads/helen.santos.v2",
+                    "oldObjectId": old_object_id
+                }
+            ],
+            "commits": [
+                {
+                    "comment": "Atualizar cards.txt via painel web",
+                    "changes": [
+                        {
+                            "changeType": "edit",
+                            "item": {
+                                "path": "/cards.txt"
+                            },
+                            "newContent": {
+                                "content": content_b64,
+                                "contentType": "base64encoded"
+                            }
+                        }
+                    ]
+                }
+            ]
         }
         
-        # Payload simplificado
-        payload = {
-            "content": content,
-            "message": "Atualizar cards.txt via painel web"
-        }
-        
-        response = requests.put(f"{api_url}?{'&'.join([f'{k}={v}' for k, v in params.items()])}", 
-                               json=payload, headers=headers)
+        response = requests.post(push_api, json=push_payload, headers=headers, params=push_params)
         
         if response.status_code in [200, 201]:
             return jsonify({"success": True, "message": "Arquivo salvo com sucesso"})
@@ -222,6 +251,11 @@ def run_pipeline():
             "Authorization": f"Basic {base64.b64encode(f':{AZURE_DEVOPS_TOKEN}'.encode()).decode()}"
         }
         
+        # Parâmetros da API (incluindo api-version obrigatório)
+        params = {
+            "api-version": "7.0"
+        }
+        
         # Payload para executar a pipeline na branch helen.santos.v2
         payload = {
             "resources": {
@@ -233,7 +267,7 @@ def run_pipeline():
             }
         }
         
-        response = requests.post(api_url, json=payload, headers=headers)
+        response = requests.post(api_url, json=payload, headers=headers, params=params)
         
         if response.status_code == 200:
             build_data = response.json()
