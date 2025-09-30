@@ -43,3 +43,18 @@ def get_sprint_info():
             return jsonify({"sprint": None, "message": "Nenhuma sprint ativa encontrada"})
     except Exception as e:
         return jsonify({"error": str(e), "sprint": None}), 500
+
+@boards_bp.route("/api/ata/<work_item_id>/details", methods=["GET"])
+def get_ata_details(work_item_id):
+    """Busca detalhes completos de uma ATA específica"""
+    try:
+        print(f"API REQUEST: Getting ATA details for work_item_id = {work_item_id}")
+        boards_controller = AzureBoardsController()
+        ata_details = boards_controller.get_ata_details(work_item_id)
+        print(f"API RESPONSE: Retrieved ATA details for {work_item_id}")
+        print(f"  - Title: {ata_details.get('title', 'Not found')}")
+        print(f"  - Comments: {ata_details.get('comments', 'Not found')[:50]}...")
+        return jsonify(ata_details)
+    except Exception as e:
+        print(f"API ERROR: Failed to get ATA details for {work_item_id}: {str(e)}")
+        return jsonify({"error": str(e)}), 500

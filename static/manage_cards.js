@@ -764,43 +764,100 @@ function capitalizeFirst(str) {
 }
 
 // ATA Editor Functions
-function openATAEditor(workItemId, event) {
+async function openATAEditor(workItemId, event) {
     event.preventDefault();
     event.stopPropagation();
     
     console.log('Opening ATA editor for:', workItemId);
     
-    // Find the work item data
-    const workItem = allWorkItems.find(item => item.id.toString() === workItemId.toString());
-    
-    if (!workItem) {
-        console.error('Work item not found:', workItemId);
-        alert('Erro: Work item não encontrado');
-        return;
+    try {
+        // Show loading
+        const loadingMessage = document.createElement('div');
+        loadingMessage.id = 'ataLoadingMessage';
+        loadingMessage.innerHTML = `
+            <div style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); 
+                        background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+                        z-index: 1001; display: flex; align-items: center; gap: 10px;">
+                <i class="fas fa-spinner fa-spin"></i>
+                <span>Carregando dados da ATA...</span>
+            </div>
+        `;
+        document.body.appendChild(loadingMessage);
+        
+        console.log('Fetching ATA details from API...');
+        // Fetch ATA details from the API
+        const response = await fetch(`/api/ata/${workItemId}/details`);
+        
+        console.log('API Response status:', response.status);
+        if (!response.ok) {
+            throw new Error(`Erro HTTP: ${response.status}`);
+        }
+        
+        const ataDetails = await response.json();
+        console.log('ATA Details received:', ataDetails);
+        
+        // Remove loading message
+        document.body.removeChild(loadingMessage);
+        
+        // Create and show the modal with loaded data
+        createATAEditorModal(ataDetails);
+        
+    } catch (error) {
+        console.error('Error loading ATA details:', error);
+        
+        // Remove loading message if it exists
+        const loadingMessage = document.getElementById('ataLoadingMessage');
+        if (loadingMessage) {
+            document.body.removeChild(loadingMessage);
+        }
+        
+        // Fallback to basic work item data
+        const workItem = allWorkItems.find(item => item.id.toString() === workItemId.toString());
+        if (workItem) {
+            console.log('Using fallback work item data:', workItem);
+            createATAEditorModal(workItem);
+        } else {
+            alert('Erro ao carregar dados da ATA: ' + error.message);
+        }
     }
-    
-    // Create and show the modal
-    createATAEditorModal(workItem);
 }
 
-function createATAEditorModal(workItem) {
+function createATAEditorModal(ataData) {
     // Remove existing modal if any
     const existingModal = document.getElementById('ataEditorModal');
     if (existingModal) {
         existingModal.remove();
     }
     
-    // Get current values from work item
-    const fields = workItem.fields;
-    const title = fields['System.Title'] || '';
+    // Extract data with fallbacks
+    const workItemId = ataData.id || ataData.work_item_id;
+    const fields = ataData.fields || {};
+    const title = ataData.title || fields['System.Title'] || '';
     const description = fields['System.Description'] || '';
+    const location = ataData.location || '';
+    const startDateTime = ataData.startDateTime || '';
+    const finishDateTime = ataData.finishDateTime || '';
+    const meetingStave = ataData.meetingStave || '';
+    const meetingSubject = ataData.meetingSubject || '';
+    const comments = ataData.comments || '';
+    
+    console.log('Creating ATA editor with data:', ataData);
+    console.log('Extracted values:');
+    console.log('- workItemId:', workItemId);
+    console.log('- title:', title);
+    console.log('- location:', location);
+    console.log('- startDateTime:', startDateTime);
+    console.log('- finishDateTime:', finishDateTime);
+    console.log('- meetingStave:', meetingStave);
+    console.log('- meetingSubject:', meetingSubject);
+    console.log('- comments:', comments);
     
     // Create modal HTML
     const modalHTML = `
         <div id="ataEditorModal" class="ata-modal-overlay">
             <div class="ata-modal">
                 <div class="ata-modal-header">
-                    <h2><i class="fas fa-edit"></i> Editar ATA #${workItem.id}</h2>
+                    <h2><i class="fas fa-edit"></i> Editar ATA #${workItemId}</h2>
                     <button class="ata-modal-close" onclick="closeATAEditor()">
                         <i class="fas fa-times"></i>
                     </button>
@@ -826,38 +883,46 @@ function createATAEditorModal(workItem) {
                         <!-- Location -->
                         <div class="ata-form-group">
                             <label for="location">Location:</label>
-                            <input type="text" id="location" name="location" placeholder="Ex: Sala de reuniões, Microsoft Teams, etc.">
+                            <input type="text" id="location" name="location" 
+                                   placeholder="Ex: Sala de reuniões, Microsoft Teams, etc."
+                                   value="${escapeHtml(location)}">
                         </div>
                         
                         <!-- Date and Time Row -->
                         <div class="ata-form-row">
                             <div class="ata-form-group">
                                 <label for="startDateTime">Date and Time - Start:</label>
-                                <input type="datetime-local" id="startDateTime" name="startDateTime">
+                                <input type="datetime-local" id="startDateTime" name="startDateTime" 
+                                       value="${startDateTime}">
                             </div>
                             
                             <div class="ata-form-group">
                                 <label for="finishDateTime">Date and Time - Finish:</label>
-                                <input type="datetime-local" id="finishDateTime" name="finishDateTime">
+                                <input type="datetime-local" id="finishDateTime" name="finishDateTime"
+                                       value="${finishDateTime}">
                             </div>
                         </div>
                         
                         <!-- Staves -->
                         <div class="ata-form-group">
                             <label for="meetingStave">Staves - #01 Meeting Stave Subject:</label>
-                            <input type="text" id="meetingStave" name="meetingStave" placeholder="Assunto principal da reunião">
+                            <input type="text" id="meetingStave" name="meetingStave" 
+                                   placeholder="Assunto principal da reunião"
+                                   value="${escapeHtml(meetingStave)}">
                         </div>
                         
                         <!-- Meeting Subject -->
                         <div class="ata-form-group">
                             <label for="meetingSubject">Meeting - #01 Subject:</label>
-                            <input type="text" id="meetingSubject" name="meetingSubject" placeholder="Assunto específico discutido">
+                            <input type="text" id="meetingSubject" name="meetingSubject" 
+                                   placeholder="Assunto específico discutido"
+                                   value="${escapeHtml(meetingSubject)}">
                         </div>
                         
                         <!-- Comments -->
                         <div class="ata-form-group">
                             <label for="comments">Comments:</label>
-                            <textarea id="comments" name="comments" rows="6" placeholder="Comentários detalhados, discussões e observações da reunião...">${escapeHtml(stripHtml(description))}</textarea>
+                            <textarea id="comments" name="comments" rows="6" placeholder="Comentários detalhados, discussões e observações da reunião...">${comments}</textarea>
                         </div>
                         
                         <!-- Next Steps -->
@@ -893,7 +958,7 @@ function createATAEditorModal(workItem) {
                     <button type="button" class="ata-btn ata-btn-secondary" onclick="closeATAEditor()">
                         <i class="fas fa-times"></i> Cancelar
                     </button>
-                    <button type="button" class="ata-btn ata-btn-primary" onclick="saveATA('${workItem.id}')">
+                    <button type="button" class="ata-btn ata-btn-primary" onclick="saveATA('${workItemId}')">
                         <i class="fas fa-save"></i> Salvar ATA
                     </button>
                 </div>
@@ -907,6 +972,11 @@ function createATAEditorModal(workItem) {
     // Show modal with animation
     setTimeout(() => {
         document.getElementById('ataEditorModal').classList.add('show');
+        
+        // Focus on location field if empty
+        if (!location) {
+            document.getElementById('location').focus();
+        }
     }, 10);
 }
 
