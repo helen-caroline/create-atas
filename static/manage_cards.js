@@ -126,39 +126,58 @@ function displayWorkItems(workItems) {
 
 function groupWorkItemsHierarchically(workItems) {
     const totvs = [];
+    const rotinas = [];
     const others = [];
     
-    // Separate TOTVS items from others
+    // Separate items by category
     workItems.forEach(item => {
         const title = (item.fields['System.Title'] || '').toLowerCase();
         if (title.includes('totvs')) {
             totvs.push(item);
+        } else if (title.includes('daily') || title.includes('planning') || title.includes('review')) {
+            rotinas.push(item);
         } else {
             others.push(item);
         }
     });
     
-    console.log('Grouped items - TOTVS:', totvs.length, 'Others:', others.length);
+    console.log('Grouped items - TOTVS:', totvs.length, 'Rotinas:', rotinas.length, 'Others:', others.length);
     
     const grouped = [];
     
-    // Create TOTVS section header if there are TOTVS items
+    // Create TOTVS section if there are TOTVS items
     if (totvs.length > 0) {
-        // Group TOTVS items by matching titles (card + ATA relationship)
         const totvsGrouped = groupTOTVSItems(totvs);
         
-        // Add TOTVS section header
         grouped.push({
             parent: {
                 id: 'totvs-header',
                 fields: {
-                    'System.Title': '🏢 TOTVS',
+                    'System.Title': 'TOTVS',
                     'System.State': 'Agrupamento',
                     'System.WorkItemType': 'Group'
                 },
                 isGroupHeader: true
             },
             children: totvsGrouped
+        });
+    }
+    
+    // Create Rotinas section if there are routine items
+    if (rotinas.length > 0) {
+        const rotinasGrouped = groupRotinasItems(rotinas);
+        
+        grouped.push({
+            parent: {
+                id: 'rotinas-header',
+                fields: {
+                    'System.Title': 'Rotinas',
+                    'System.State': 'Agrupamento',
+                    'System.WorkItemType': 'Group'
+                },
+                isGroupHeader: true
+            },
+            children: rotinasGrouped
         });
     }
     
@@ -171,6 +190,22 @@ function groupWorkItemsHierarchically(workItems) {
     });
     
     console.log('Final grouped structure:', grouped.length, 'groups');
+    return grouped;
+}
+
+function groupRotinasItems(rotinasItems) {
+    const grouped = [];
+    
+    // For rotinas, we'll group them simply as individual items
+    // since they don't typically have ATAs associated
+    rotinasItems.forEach(item => {
+        grouped.push({
+            parent: item,
+            children: []
+        });
+    });
+    
+    console.log('Rotinas grouping:', grouped.length, 'items');
     return grouped;
 }
 
@@ -297,51 +332,79 @@ function generateHierarchicalHTML(groupedItems) {
     groupedItems.forEach((group, groupIndex) => {
         const hasChildren = group.children && group.children.length > 0;
         const isGroupHeader = group.parent.isGroupHeader;
+        const groupType = group.parent.id; // 'totvs-header' or 'rotinas-header'
         
         if (isGroupHeader && hasChildren) {
-            // TOTVS Section Header with nested groups
+            // Determine section class and header class
+            let sectionClass = 'work-item-group';
+            let headerClass = 'totvs-header';
+            let childrenClass = 'totvs-children';
+            
+            if (groupType === 'rotinas-header') {
+                sectionClass = 'work-item-group rotinas-section';
+                headerClass = 'rotinas-header';
+                childrenClass = 'rotinas-children';
+            } else if (groupType === 'totvs-header') {
+                sectionClass = 'work-item-group totvs-section';
+                headerClass = 'totvs-header';
+                childrenClass = 'totvs-children';
+            }
+            
+            // Section Header with nested groups
             html += `
-                <div class="work-item-group totvs-section">
+                <div class="${sectionClass}">
                     <div class="work-item-parent has-children group-header" onclick="toggleGroup(${groupIndex})">
                         <div class="expand-indicator">
                             <i class="fas fa-chevron-right" id="chevron-${groupIndex}"></i>
                         </div>
-                        <div class="totvs-header">
-                            <h3><i class="fas fa-building"></i> ${group.parent.fields['System.Title']}</h3>
-                            <span class="item-count">${group.children.length} grupos</span>
+                        <div class="${headerClass}">
+                            <h3><i class="fas ${groupType === 'rotinas-header' ? 'fa-sync-alt' : 'fa-building'}"></i> ${group.parent.fields['System.Title']}</h3>
+                            <span class="item-count">${group.children.length} ${groupType === 'rotinas-header' ? 'itens' : 'grupos'}</span>
                         </div>
                     </div>
-                    <div class="work-item-children totvs-children" id="children-${groupIndex}" style="display: none;">
+                    <div class="work-item-children ${childrenClass}" id="children-${groupIndex}" style="display: none;">
                         ${group.children.map((subGroup, subIndex) => {
                             const subHasChildren = subGroup.children && subGroup.children.length > 0;
                             const subGroupId = `${groupIndex}-${subIndex}`;
                             
-                            if (subHasChildren) {
+                            if (groupType === 'rotinas-header') {
+                                // For rotinas, items are simple (no sub-children expected)
                                 return `
-                                    <div class="work-item-child totvs-subgroup">
-                                        <div class="work-item-parent has-children" onclick="toggleGroup('${subGroupId}')">
-                                            <div class="expand-indicator">
-                                                <i class="fas fa-chevron-right" id="chevron-${subGroupId}"></i>
-                                            </div>
-                                            ${createWorkItemCard(subGroup.parent)}
-                                        </div>
-                                        <div class="work-item-children" id="children-${subGroupId}" style="display: none;">
-                                            ${subGroup.children.map(child => `
-                                                <div class="work-item-child">
-                                                    ${createWorkItemCard(child)}
-                                                </div>
-                                            `).join('')}
-                                        </div>
-                                    </div>
-                                `;
-                            } else {
-                                return `
-                                    <div class="work-item-child totvs-subgroup">
+                                    <div class="work-item-child rotinas-subgroup">
                                         <div class="work-item-single">
                                             ${createWorkItemCard(subGroup.parent)}
                                         </div>
                                     </div>
                                 `;
+                            } else {
+                                // For TOTVS, handle nested structure
+                                if (subHasChildren) {
+                                    return `
+                                        <div class="work-item-child totvs-subgroup">
+                                            <div class="work-item-parent has-children" onclick="toggleGroup('${subGroupId}')">
+                                                <div class="expand-indicator">
+                                                    <i class="fas fa-chevron-right" id="chevron-${subGroupId}"></i>
+                                                </div>
+                                                ${createWorkItemCard(subGroup.parent)}
+                                            </div>
+                                            <div class="work-item-children" id="children-${subGroupId}" style="display: none;">
+                                                ${subGroup.children.map(child => `
+                                                    <div class="work-item-child">
+                                                        ${createWorkItemCard(child)}
+                                                    </div>
+                                                `).join('')}
+                                            </div>
+                                        </div>
+                                    `;
+                                } else {
+                                    return `
+                                        <div class="work-item-child totvs-subgroup">
+                                            <div class="work-item-single">
+                                                ${createWorkItemCard(subGroup.parent)}
+                                            </div>
+                                        </div>
+                                    `;
+                                }
                             }
                         }).join('')}
                     </div>

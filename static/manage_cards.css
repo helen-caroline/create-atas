@@ -186,14 +186,55 @@
     background: linear-gradient(135deg, #0056b3 0%, #004085 100%);
 }
 
-.totvs-header {
+/* Rotinas Section Styling */
+.rotinas-section {
+    border: 2px solid #28a745;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    background: linear-gradient(135deg, #f8fff9 0%, #e8f5e8 100%);
+}
+
+.rotinas-section .group-header {
+    background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%);
+    color: white;
+    padding: 15px 20px;
+    border-radius: 10px 10px 0 0;
+}
+
+.rotinas-section .group-header:hover {
+    background: linear-gradient(135deg, #1e7e34 0%, #155724 100%);
+}
+
+.rotinas-children {
+    background: #fafffe;
+    padding: 10px;
+}
+
+.rotinas-subgroup {
+    margin-bottom: 10px;
+    border: 1px solid #e8f5e8;
+    border-radius: 8px;
+    background: white;
+    box-shadow: 0 1px 3px rgba(40, 167, 69, 0.1);
+}
+
+.rotinas-subgroup:last-child {
+    margin-bottom: 0;
+}
+
+.rotinas-subgroup .work-item-single {
+    border-radius: 8px;
+}
+
+/* Shared Group Header Styling */
+.totvs-header, .rotinas-header {
     flex: 1;
     display: flex;
     align-items: center;
     justify-content: space-between;
 }
 
-.totvs-header h3 {
+.totvs-header h3, .rotinas-header h3 {
     margin: 0;
     font-size: 18px;
     font-weight: 600;
@@ -202,7 +243,7 @@
     gap: 10px;
 }
 
-.totvs-header .item-count {
+.totvs-header .item-count, .rotinas-header .item-count {
     background: rgba(255, 255, 255, 0.2);
     padding: 4px 12px;
     border-radius: 20px;
