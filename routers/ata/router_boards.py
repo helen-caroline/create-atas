@@ -58,3 +58,20 @@ def get_ata_details(work_item_id):
     except Exception as e:
         print(f"API ERROR: Failed to get ATA details for {work_item_id}: {str(e)}")
         return jsonify({"error": str(e)}), 500
+
+@boards_bp.route("/api/ata/<work_item_id>/save", methods=["POST"])
+def save_ata_details(work_item_id):
+    """Salva detalhes atualizados de uma ATA específica"""
+    try:
+        print(f"API REQUEST: Saving ATA details for work_item_id = {work_item_id}")
+        ata_data = request.get_json()
+        print(f"  - Data received: {list(ata_data.keys()) if ata_data else 'None'}")
+        
+        boards_controller = AzureBoardsController()
+        result = boards_controller.save_ata_details(work_item_id, ata_data)
+        
+        print(f"API RESPONSE: Successfully saved ATA {work_item_id}")
+        return jsonify(result)
+    except Exception as e:
+        print(f"API ERROR: Failed to save ATA details for {work_item_id}: {str(e)}")
+        return jsonify({"error": str(e)}), 500

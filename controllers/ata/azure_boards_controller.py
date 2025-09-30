@@ -316,6 +316,133 @@ class AzureBoardsController:
             print(f"Erro ao buscar detalhes da ATA {work_item_id}: {str(e)}")
             return {"error": str(e), "id": work_item_id}
     
+    def save_ata_details(self, work_item_id, ata_data):
+        """Salva detalhes atualizados de uma ATA no Azure DevOps"""
+        try:
+            # URL para atualizar o work item
+            api_url = f"https://dev.azure.com/{self.org}/{self.project}/_apis/wit/workitems/{work_item_id}"
+            params = {
+                "api-version": "7.0"
+            }
+            
+            # Preparar os campos a serem atualizados baseados nos dados recebidos
+            updates = []
+            skipped_fields = []
+            
+            # Mapear campos do frontend para campos do Azure DevOps que realmente existem
+            if "location" in ata_data and ata_data["location"]:
+                updates.append({
+                    "op": "replace",
+                    "path": "/fields/Custom.MeetingLocation",
+                    "value": ata_data["location"]
+                })
+            
+            # Agora usar os campos corretos que existem no Azure DevOps
+            if "startDateTime" in ata_data and ata_data["startDateTime"]:
+                # Converter datetime-local para formato ISO
+                start_datetime = self._convert_datetime_to_iso(ata_data["startDateTime"])
+                updates.append({
+                    "op": "replace",
+                    "path": "/fields/Custom.MeetingDateTimeStart",
+                    "value": start_datetime
+                })
+            
+            if "finishDateTime" in ata_data and ata_data["finishDateTime"]:
+                # Converter datetime-local para formato ISO
+                finish_datetime = self._convert_datetime_to_iso(ata_data["finishDateTime"])
+                updates.append({
+                    "op": "replace",
+                    "path": "/fields/Custom.MeetingDateTimeFinish",
+                    "value": finish_datetime
+                })
+            
+            if "meetingStave" in ata_data and ata_data["meetingStave"]:
+                updates.append({
+                    "op": "replace",
+                    "path": "/fields/Custom.MeetingStavesSubject1",
+                    "value": ata_data["meetingStave"]
+                })
+            
+            if "meetingSubject" in ata_data and ata_data["meetingSubject"]:
+                updates.append({
+                    "op": "replace",
+                    "path": "/fields/Custom.MeetingSubject1",
+                    "value": ata_data["meetingSubject"]
+                })
+            
+            if "comments" in ata_data and ata_data["comments"]:
+                # Envolver em div para manter consistência com o formato
+                comments_html = f"<div>{ata_data['comments']}</div>"
+                updates.append({
+                    "op": "replace",
+                    "path": "/fields/Custom.MeetingComments1",
+                    "value": comments_html
+                })
+            
+            # Se não há atualizações, retornar informação sobre campos ignorados
+            if not updates:
+                message = "Nenhuma alteração para salvar"
+                if skipped_fields:
+                    message += f". Campos ignorados: {', '.join(skipped_fields)}"
+                return {"success": True, "message": message, "id": work_item_id}
+            
+            # Headers para a requisição PATCH
+            headers = self.headers.copy()
+            headers["Content-Type"] = "application/json-patch+json"
+            
+            print(f"Updating work item {work_item_id} with {len(updates)} field(s)")
+            for update in updates:
+                print(f"  - {update['path']}: {str(update['value'])[:50]}...")
+            
+            if skipped_fields:
+                print(f"Skipped fields: {', '.join(skipped_fields)}")
+            
+            response = requests.patch(api_url, json=updates, headers=headers, params=params)
+            
+            if response.status_code == 200:
+                print(f"Successfully updated work item {work_item_id}")
+                message = "ATA salva com sucesso!"
+                if skipped_fields:
+                    message += f" (Campos de data/hora não foram salvos - campos não existem no Azure DevOps)"
+                
+                return {
+                    "success": True, 
+                    "message": message,
+                    "id": work_item_id,
+                    "updatedFields": len(updates),
+                    "skippedFields": skipped_fields
+                }
+            else:
+                error_msg = f"HTTP {response.status_code}"
+                try:
+                    error_detail = response.json()
+                    error_msg += f": {error_detail}"
+                except:
+                    error_msg += f": {response.text}"
+                
+                print(f"Failed to update work item {work_item_id}: {error_msg}")
+                return {"error": error_msg, "id": work_item_id}
+                
+        except Exception as e:
+            print(f"Exception while saving ATA {work_item_id}: {str(e)}")
+            return {"error": str(e), "id": work_item_id}
+    
+    def _convert_datetime_to_iso(self, datetime_local):
+        """Converte datetime-local para formato ISO do Azure DevOps (adiciona 3h para UTC)"""
+        try:
+            from datetime import datetime, timedelta
+            # datetime_local está no formato: "2025-09-30T14:30" (horário local Brasil)
+            dt = datetime.fromisoformat(datetime_local)
+            # Adicionar 3 horas para converter para UTC (Azure DevOps armazena em UTC)
+            utc_dt = dt + timedelta(hours=3)
+            # Converter para formato ISO com Z
+            result = utc_dt.strftime("%Y-%m-%dT%H:%M:%S.000Z")
+            print(f"DEBUG: Converting Local->UTC for save: {datetime_local} -> {result}")
+            return result
+        except Exception as e:
+            print(f"Error converting datetime {datetime_local}: {e}")
+            return datetime_local
+    
     def _extract_location_from_fields(self, fields):
         """Extrai informação de local dos campos disponíveis"""
         # Primeiro tentar campos específicos de localização
@@ -348,7 +475,29 @@ class AzureBoardsController:
     
     def _extract_start_datetime_from_fields(self, fields):
         """Extrai data/hora de início dos campos disponíveis"""
-        # Primeiro tentar extrair da data de atividade no título
+        # Primeiro tentar extrair do campo específico do Azure DevOps
+        start_datetime = fields.get("Custom.MeetingDateTimeStart", "")
+        if start_datetime:
+            try:
+                # Azure DevOps armazena em UTC, mas precisamos converter de volta para horário local BR (UTC-3)
+                from datetime import datetime, timedelta
+                
+                # Parse do datetime UTC
+                if start_datetime.endswith('Z'):
+                    start_datetime = start_datetime[:-1]  # Remove 'Z'
+                
+                date_obj = datetime.fromisoformat(start_datetime)
+                # Subtrair 3 horas para voltar ao horário local do Brasil
+                local_date_obj = date_obj - timedelta(hours=3)
+                result = local_date_obj.strftime("%Y-%m-%dT%H:%M")
+                
+                print(f"DEBUG: Start datetime UTC->Local: {fields.get('Custom.MeetingDateTimeStart')} -> {result}")
+                return result
+            except Exception as e:
+                print(f"Error parsing start datetime: {e}")
+                pass
+        
+        # Fallback: tentar extrair da data de atividade no título
         title = fields.get("System.Title", "")
         project_info = self._extract_project_info_from_title(title)
         
@@ -378,7 +527,29 @@ class AzureBoardsController:
     
     def _extract_finish_datetime_from_fields(self, fields):
         """Extrai data/hora de fim dos campos disponíveis"""
-        # Usar data de início e adicionar 2 horas como padrão
+        # Primeiro tentar extrair do campo específico do Azure DevOps
+        finish_datetime = fields.get("Custom.MeetingDateTimeFinish", "")
+        if finish_datetime:
+            try:
+                # Azure DevOps armazena em UTC, mas precisamos converter de volta para horário local BR (UTC-3)
+                from datetime import datetime, timedelta
+                
+                # Parse do datetime UTC
+                if finish_datetime.endswith('Z'):
+                    finish_datetime = finish_datetime[:-1]  # Remove 'Z'
+                
+                date_obj = datetime.fromisoformat(finish_datetime)
+                # Subtrair 3 horas para voltar ao horário local do Brasil
+                local_date_obj = date_obj - timedelta(hours=3)
+                result = local_date_obj.strftime("%Y-%m-%dT%H:%M")
+                
+                print(f"DEBUG: Finish datetime UTC->Local: {fields.get('Custom.MeetingDateTimeFinish')} -> {result}")
+                return result
+            except Exception as e:
+                print(f"Error parsing finish datetime: {e}")
+                pass
+        
+        # Fallback: usar data de início e adicionar 2 horas como padrão
         start_datetime = self._extract_start_datetime_from_fields(fields)
         if start_datetime:
             try:

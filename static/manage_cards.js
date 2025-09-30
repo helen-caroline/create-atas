@@ -992,59 +992,76 @@ function closeATAEditor() {
 
 async function saveATA(workItemId) {
     const form = document.getElementById('ataEditorForm');
-    const formData = new FormData(form);
-    
-    // Convert FormData to object
-    const ataData = {};
-    for (let [key, value] of formData.entries()) {
-        ataData[key] = value;
+    if (!form) {
+        alert('Formulário não encontrado!');
+        return;
     }
     
-    // Process Next Steps into structured format
-    const nextSteps = [];
-    for (let i = 1; i <= 10; i++) {
-        const action = ataData[`action_${i}`];
-        const responsible = ataData[`responsible_${i}`];
-        const date = ataData[`date_${i}`];
-        
-        if (action || responsible || date) {
-            nextSteps.push({
-                number: i,
-                action: action || '',
-                responsible: responsible || '',
-                date: date || ''
-            });
-        }
-        
-        // Remove individual fields from ataData
-        delete ataData[`action_${i}`];
-        delete ataData[`responsible_${i}`];
-        delete ataData[`date_${i}`];
-    }
-    
-    ataData.nextSteps = nextSteps;
-    
-    console.log('Saving ATA data:', ataData);
+    console.log('Saving ATA for work item:', workItemId);
     
     try {
+        // Coletar dados do formulário
+        const ataData = {
+            location: document.getElementById('location')?.value || '',
+            startDateTime: document.getElementById('startDateTime')?.value || '',
+            finishDateTime: document.getElementById('finishDateTime')?.value || '',
+            meetingStave: document.getElementById('meetingStave')?.value || '',
+            meetingSubject: document.getElementById('meetingSubject')?.value || '',
+            comments: document.getElementById('comments')?.value || ''
+        };
+        
+        console.log('ATA data to save:', ataData);
+        
         // Show loading state
         const saveBtn = document.querySelector('.ata-btn-primary');
-        const originalText = saveBtn.innerHTML;
-        saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
-        saveBtn.disabled = true;
-        
-        // TODO: Implement actual save to Azure DevOps
-        // For now, just simulate success
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        // Show success message
-        alert('ATA salva com sucesso!');
-        
-        // Close modal
-        closeATAEditor();
-        
-        // Reload work items to show updated data
-        await loadWorkItems();
+        if (saveBtn) {
+            const originalText = saveBtn.innerHTML;
+            saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
+            saveBtn.disabled = true;
+            
+            // Fazer a requisição para salvar
+            const response = await fetch(`/api/ata/${workItemId}/save`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(ataData)
+            });
+            
+            const result = await response.json();
+            
+            if (response.ok && result.success) {
+                console.log('ATA saved successfully:', result);
+                
+                // Build success message with details
+                let message = result.message || 'ATA salva com sucesso!';
+                
+                if (result.updatedFields) {
+                    message += ` ${result.updatedFields} campo(s) atualizado(s).`;
+                }
+                
+                if (result.skippedFields && result.skippedFields.length > 0) {
+                    message += `\n\nAtenção: Alguns campos não foram salvos:\n${result.skippedFields.join('\n')}`;
+                }
+                
+                // Show success message
+                alert(message);
+                
+                // Close modal
+                closeATAEditor();
+                
+                // Reload work items to show updated data
+                await loadWorkItems();
+                
+            } else {
+                throw new Error(result.error || `HTTP ${response.status}`);
+            }
+            
+            // Restore button
+            saveBtn.innerHTML = originalText;
+            saveBtn.disabled = false;
+            
+        }
         
     } catch (error) {
         console.error('Error saving ATA:', error);
@@ -1052,8 +1069,10 @@ async function saveATA(workItemId) {
         
         // Restore button
         const saveBtn = document.querySelector('.ata-btn-primary');
-        saveBtn.innerHTML = originalText;
-        saveBtn.disabled = false;
+        if (saveBtn) {
+            saveBtn.innerHTML = '<i class="fas fa-save"></i> Salvar ATA';
+            saveBtn.disabled = false;
+        }
     }
 }
 
