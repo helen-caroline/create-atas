@@ -161,9 +161,9 @@
 .cards-grid {
     padding: 20px;
     min-height: 400px;
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-    gap: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
 }
 
 /* Individual Card Styles */
