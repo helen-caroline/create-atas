@@ -291,6 +291,7 @@ class AzureBoardsController:
                     "meetingSubject": self._extract_meeting_subject_from_fields(fields),
                     "comments": self._extract_comments_from_fields(fields),
                     "nextSteps": self._extract_next_steps_from_fields(fields),
+                    "template": fields.get("Custom.PrintingtemplatesATA", "ATA"),  # Default para ATA
                     
                     # Campos baseados no script PowerShell
                     "tribe": fields.get("Custom.Tribe", ""),
@@ -378,6 +379,55 @@ class AzureBoardsController:
                     "path": "/fields/Custom.MeetingComments1",
                     "value": comments_html
                 })
+            
+            # Atualizar template se fornecido
+            if "template" in ata_data and ata_data["template"]:
+                updates.append({
+                    "op": "replace",
+                    "path": "/fields/Custom.PrintingtemplatesATA",
+                    "value": ata_data["template"]
+                })
+            
+            # Atualizar Next Steps se fornecidos
+            if "nextSteps" in ata_data and isinstance(ata_data["nextSteps"], list):
+                # Criar um dicionário para rastrear quais campos serão atualizados
+                next_steps_updates = {}
+                
+                # Inicializar todos os campos como vazios
+                for step_num in range(1, 11):
+                    next_steps_updates[f"Custom.MeetingAction{step_num}"] = ""
+                    next_steps_updates[f"Custom.MeetingActionResponsible{step_num}"] = ""
+                    next_steps_updates[f"Custom.MeetingActionDate{step_num}"] = ""
+                
+                # Preencher apenas os Next Steps que têm valores
+                for step in ata_data["nextSteps"]:
+                    step_num = step.get("number", 0)
+                    if 1 <= step_num <= 10:  # Validar número do step
+                        # Action
+                        if "action" in step and step["action"]:
+                            next_steps_updates[f"Custom.MeetingAction{step_num}"] = step["action"]
+                        
+                        # Responsible
+                        if "responsible" in step and step["responsible"]:
+                            next_steps_updates[f"Custom.MeetingActionResponsible{step_num}"] = step["responsible"]
+                        
+                        # Date
+                        if "date" in step and step["date"]:
+                            try:
+                                # Usar a mesma função de conversão dos outros campos de datetime
+                                utc_date_formatted = self._convert_datetime_to_iso(step["date"])
+                                next_steps_updates[f"Custom.MeetingActionDate{step_num}"] = utc_date_formatted
+                            except Exception as e:
+                                print(f"Error converting date for step {step_num}: {e}")
+                                pass
+                
+                # Adicionar as atualizações dos Next Steps ao updates
+                for field_path, field_value in next_steps_updates.items():
+                    updates.append({
+                        "op": "replace",
+                        "path": f"/fields/{field_path}",
+                        "value": field_value
+                    })
             
             # Se não há atualizações, retornar informação sobre campos ignorados
             if not updates:
@@ -608,8 +658,41 @@ class AzureBoardsController:
     
     def _extract_next_steps_from_fields(self, fields):
         """Extrai próximos passos dos campos disponíveis"""
-        # Por enquanto retornar lista vazia, será implementado conforme estrutura real
-        return []
+        next_steps = []
+        
+        # Verificar até 10 possíveis next steps (baseado na estrutura da interface)
+        for i in range(1, 11):
+            action = fields.get(f"Custom.MeetingAction{i}", "").strip()
+            responsible = fields.get(f"Custom.MeetingActionResponsible{i}", "").strip()
+            date_raw = fields.get(f"Custom.MeetingActionDate{i}", "")
+            
+            # Se pelo menos um campo tem conteúdo, incluir o step
+            if action or responsible or date_raw:
+                # Converter data se existir
+                date_formatted = ""
+                if date_raw:
+                    try:
+                        from datetime import datetime, timedelta
+                        if date_raw.endswith('Z'):
+                            date_raw = date_raw[:-1]
+                        date_obj = datetime.fromisoformat(date_raw)
+                        # Subtrair 3 horas para converter UTC para horário local
+                        local_date_obj = date_obj - timedelta(hours=3)
+                        # Usar formato datetime-local (YYYY-MM-DDTHH:MM)
+                        date_formatted = local_date_obj.strftime("%Y-%m-%dT%H:%M")
+                        print(f"DEBUG: Next Step {i} date UTC->Local: {date_raw} -> {date_formatted}")
+                    except Exception as e:
+                        print(f"Error converting Next Step {i} date: {e}")
+                        date_formatted = ""
+                
+                next_steps.append({
+                    "number": i,
+                    "action": action,
+                    "responsible": responsible,
+                    "date": date_formatted
+                })
+        
+        return next_steps
     
     def _extract_assigned_to(self, assigned_to_field):
         """Extrai informação de quem está assignado"""

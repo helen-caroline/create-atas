@@ -840,6 +840,8 @@ function createATAEditorModal(ataData) {
     const meetingStave = ataData.meetingStave || '';
     const meetingSubject = ataData.meetingSubject || '';
     const comments = ataData.comments || '';
+    const template = ataData.template || 'ATA';  // Default to ATA
+    const nextSteps = ataData.nextSteps || [];  // Array de next steps
     
     console.log('Creating ATA editor with data:', ataData);
     console.log('Extracted values:');
@@ -869,8 +871,8 @@ function createATAEditorModal(ataData) {
                         <div class="ata-form-group">
                             <label for="templateType">Template:</label>
                             <select id="templateType" name="templateType">
-                                <option value="ATA">ATA</option>
-                                <option value="Activities Report">Activities Report</option>
+                                <option value="ATA" ${template === 'ATA' ? 'selected' : ''}>ATA</option>
+                                <option value="Activities Report" ${template === 'Activities Report' ? 'selected' : ''}>Activities Report</option>
                             </select>
                         </div>
                         
@@ -933,21 +935,33 @@ function createATAEditorModal(ataData) {
                                     <div class="next-steps-col">Actions</div>
                                     <div class="next-steps-col">Responsible</div>
                                     <div class="next-steps-col">Date</div>
+                                    <div class="next-steps-col">
+                                        <button type="button" class="ata-btn ata-btn-warning btn-clear-next-steps" onclick="clearAllNextSteps()" title="Limpar todos os Next Steps">
+                                            <i class="fas fa-trash"></i> Limpar Todos
+                                        </button>
+                                    </div>
                                 </div>
                                 <div class="next-steps-rows">
-                                    ${Array.from({length: 10}, (_, i) => `
+                                    ${Array.from({length: 10}, (_, i) => {
+                                        const stepNum = i + 1;
+                                        const step = nextSteps.find(s => s.number === stepNum) || {};
+                                        return `
                                         <div class="next-steps-row">
                                             <div class="next-steps-col">
-                                                <input type="text" name="action_${i + 1}" placeholder="#0${i + 1}" class="next-steps-input">
+                                                <input type="text" name="action_${stepNum}" placeholder="#0${stepNum < 10 ? '0' + stepNum : stepNum}" 
+                                                       class="next-steps-input" value="${escapeHtml(step.action || '')}">
                                             </div>
                                             <div class="next-steps-col">
-                                                <input type="text" name="responsible_${i + 1}" placeholder="#0${i + 1}" class="next-steps-input">
+                                                <input type="text" name="responsible_${stepNum}" placeholder="#0${stepNum < 10 ? '0' + stepNum : stepNum}" 
+                                                       class="next-steps-input" value="${escapeHtml(step.responsible || '')}">
                                             </div>
                                             <div class="next-steps-col">
-                                                <input type="date" name="date_${i + 1}" placeholder="Select a date..." class="next-steps-input next-steps-date">
+                                                <input type="datetime-local" name="date_${stepNum}" placeholder="Select a date..." 
+                                                       class="next-steps-input next-steps-date" value="${step.date || ''}">
                                             </div>
                                         </div>
-                                    `).join('')}
+                                    `;
+                                    }).join('')}
                                 </div>
                             </div>
                         </div>
@@ -980,6 +994,54 @@ function createATAEditorModal(ataData) {
     }, 10);
 }
 
+function clearAllNextSteps() {
+    // Limpar todos os campos de Next Steps
+    for (let i = 1; i <= 10; i++) {
+        const actionField = document.querySelector(`input[name="action_${i}"]`);
+        const responsibleField = document.querySelector(`input[name="responsible_${i}"]`);
+        const dateField = document.querySelector(`input[name="date_${i}"]`);
+        
+        if (actionField) actionField.value = '';
+        if (responsibleField) responsibleField.value = '';
+        if (dateField) dateField.value = '';
+    }
+    
+    // Mostrar mensagem de confirmação
+    console.log('Todos os Next Steps foram limpos');
+    
+    // Opcional: mostrar um toast ou feedback visual
+    const toast = document.createElement('div');
+    toast.className = 'toast-notification';
+    toast.innerHTML = '<i class="fas fa-check"></i> Next Steps limpos com sucesso!';
+    toast.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: #28a745;
+        color: white;
+        padding: 10px 15px;
+        border-radius: 5px;
+        z-index: 10000;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        font-size: 14px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    `;
+    
+    document.body.appendChild(toast);
+    
+    // Remover o toast após 3 segundos
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        setTimeout(() => {
+            if (toast.parentNode) {
+                toast.parentNode.removeChild(toast);
+            }
+        }, 300);
+    }, 3000);
+}
+
 function closeATAEditor() {
     const modal = document.getElementById('ataEditorModal');
     if (modal) {
@@ -991,33 +1053,66 @@ function closeATAEditor() {
 }
 
 async function saveATA(workItemId) {
-    const form = document.getElementById('ataEditorForm');
-    if (!form) {
-        alert('Formulário não encontrado!');
-        return;
-    }
-    
-    console.log('Saving ATA for work item:', workItemId);
-    
     try {
-        // Coletar dados do formulário
+        const form = document.getElementById('ataEditorForm');
+        if (!form) {
+            alert('Formulário não encontrado!');
+            return;
+        }
+        
+        console.log('Saving ATA for work item:', workItemId);
+        
+        // Coletar dados do formulário com verificações de segurança
+        const getElementValue = (id) => {
+            const element = document.getElementById(id);
+            return element ? element.value || '' : '';
+        };
+        
+        // Coletar Next Steps
+        const nextSteps = [];
+        for (let i = 1; i <= 10; i++) {
+            // Usar querySelector com name ao invés de getElementById
+            const actionInput = document.querySelector(`input[name="action_${i}"]`);
+            const responsibleInput = document.querySelector(`input[name="responsible_${i}"]`);
+            const dateInput = document.querySelector(`input[name="date_${i}"]`);
+            
+            const action = actionInput ? actionInput.value.trim() : '';
+            const responsible = responsibleInput ? responsibleInput.value.trim() : '';
+            const date = dateInput ? dateInput.value.trim() : '';
+            
+            // Se pelo menos um campo está preenchido, incluir o step
+            if (action || responsible || date) {
+                nextSteps.push({
+                    number: i,
+                    action: action,
+                    responsible: responsible,
+                    date: date
+                });
+            }
+        }
+        
         const ataData = {
-            location: document.getElementById('location')?.value || '',
-            startDateTime: document.getElementById('startDateTime')?.value || '',
-            finishDateTime: document.getElementById('finishDateTime')?.value || '',
-            meetingStave: document.getElementById('meetingStave')?.value || '',
-            meetingSubject: document.getElementById('meetingSubject')?.value || '',
-            comments: document.getElementById('comments')?.value || ''
+            template: getElementValue('templateType') || 'ATA',
+            location: getElementValue('location'),
+            startDateTime: getElementValue('startDateTime'),
+            finishDateTime: getElementValue('finishDateTime'),
+            meetingStave: getElementValue('meetingStave'),
+            meetingSubject: getElementValue('meetingSubject'),
+            comments: getElementValue('comments'),
+            nextSteps: nextSteps
         };
         
         console.log('ATA data to save:', ataData);
         
-        // Show loading state
+        // Show loading state com verificação de segurança
         const saveBtn = document.querySelector('.ata-btn-primary');
+        let originalText = '<i class="fas fa-save"></i> Salvar ATA'; // Default fallback
+        
         if (saveBtn) {
-            const originalText = saveBtn.innerHTML;
+            originalText = saveBtn.innerHTML;
             saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
             saveBtn.disabled = true;
+        }
             
             // Fazer a requisição para salvar
             const response = await fetch(`/api/ata/${workItemId}/save`, {
@@ -1057,21 +1152,30 @@ async function saveATA(workItemId) {
                 throw new Error(result.error || `HTTP ${response.status}`);
             }
             
-            // Restore button
-            saveBtn.innerHTML = originalText;
-            saveBtn.disabled = false;
+            // Restore button state
+            if (saveBtn) {
+                saveBtn.innerHTML = originalText;
+                saveBtn.disabled = false;
+            }
             
-        }
-        
     } catch (error) {
         console.error('Error saving ATA:', error);
         alert('Erro ao salvar ATA: ' + error.message);
         
-        // Restore button
+        // Restore button com verificação de segurança
         const saveBtn = document.querySelector('.ata-btn-primary');
         if (saveBtn) {
             saveBtn.innerHTML = '<i class="fas fa-save"></i> Salvar ATA';
             saveBtn.disabled = false;
+        }
+    } finally {
+        // Garantir que o botão seja restaurado em qualquer caso
+        const saveBtn = document.querySelector('.ata-btn-primary');
+        if (saveBtn && saveBtn.disabled) {
+            saveBtn.disabled = false;
+            if (saveBtn.innerHTML.includes('Salvando')) {
+                saveBtn.innerHTML = '<i class="fas fa-save"></i> Salvar ATA';
+            }
         }
     }
 }

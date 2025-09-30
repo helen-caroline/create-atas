@@ -5,8 +5,10 @@ document.getElementById('ataForm').onsubmit = async function(e) {
     form.querySelector('button[type="submit"]').disabled = true;
     
     // Hide both result and placeholder during loading
-    document.getElementById('ataResult').style.display = 'none';
-    document.getElementById('resultPlaceholder').style.display = 'none';
+    const ataResultEl = document.getElementById('ataResult');
+    const resultPlaceholderEl = document.getElementById('resultPlaceholder');
+    if (ataResultEl) ataResultEl.style.display = 'none';
+    if (resultPlaceholderEl) resultPlaceholderEl.style.display = 'none';
     
     let data;
     try {
@@ -33,8 +35,10 @@ document.getElementById('ataForm').onsubmit = async function(e) {
         preencherCamposSeparados(data.ata, formData, data.titulo, data.proximos, data.corpo);
     
     // Show result and hide placeholder
-    document.getElementById('ataResult').style.display = 'block';
-    document.getElementById('resultPlaceholder').style.display = 'none';
+    const showAtaResultEl = document.getElementById('ataResult');
+    const showResultPlaceholderEl = document.getElementById('resultPlaceholder');
+    if (showAtaResultEl) showAtaResultEl.style.display = 'block';
+    if (showResultPlaceholderEl) showResultPlaceholderEl.style.display = 'none';
     form.querySelector('button[type="submit"]').disabled = false;
 };
 
@@ -48,8 +52,10 @@ document.getElementById('ataForm').onsubmit = async function(e) {
         el.textContent = msg;
         el.style.display = 'block';
         // hide result area and show placeholder when there's an error
-        document.getElementById('ataResult').style.display = 'none';
-        document.getElementById('resultPlaceholder').style.display = 'flex';
+        const ataResultErrorEl = document.getElementById('ataResult');
+        const resultPlaceholderErrorEl = document.getElementById('resultPlaceholder');
+        if (ataResultErrorEl) ataResultErrorEl.style.display = 'none';
+        if (resultPlaceholderErrorEl) resultPlaceholderErrorEl.style.display = 'flex';
     }
 
     // Extract title from several possible formats:
@@ -240,7 +246,7 @@ function showToast(message, ms = 1600) {
             document.body.appendChild(el);
         }
         el.textContent = message;
-        el.style.display = 'block';
+        if (el.style) el.style.display = 'block';
         // reflow to allow transition
         void el.offsetWidth;
         el.classList.add('show');
@@ -248,7 +254,9 @@ function showToast(message, ms = 1600) {
         el._hideTimeout = setTimeout(() => {
             el.classList.remove('show');
             // wait for transition end then hide
-            setTimeout(() => { el.style.display = 'none'; }, 200);
+            setTimeout(() => { 
+                if (el.style) el.style.display = 'none'; 
+            }, 200);
         }, ms);
     } catch (e) {
         // fail silently
