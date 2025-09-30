@@ -114,17 +114,294 @@ function displayWorkItems(workItems) {
         return;
     }
 
-    const cardsHTML = validWorkItems.map((item, index) => {
-        try {
-            return createWorkItemCard(item);
-        } catch (error) {
-            console.error(`Erro ao criar card ${index}:`, error, item);
-            return ''; // Return empty string for failed cards
-        }
-    }).filter(html => html !== ''); // Remove empty cards
+    // Group work items hierarchically: Tasks as parents, ATAs as children
+    const groupedItems = groupWorkItemsHierarchically(validWorkItems);
     
-    console.log('Generated', cardsHTML.length, 'card HTML elements');
-    cardsContainer.innerHTML = cardsHTML.join('');
+    // Generate hierarchical HTML
+    const hierarchicalHTML = generateHierarchicalHTML(groupedItems);
+    
+    console.log('Generated hierarchical structure');
+    cardsContainer.innerHTML = hierarchicalHTML;
+}
+
+function groupWorkItemsHierarchically(workItems) {
+    const totvs = [];
+    const others = [];
+    
+    // Separate TOTVS items from others
+    workItems.forEach(item => {
+        const title = (item.fields['System.Title'] || '').toLowerCase();
+        if (title.includes('totvs')) {
+            totvs.push(item);
+        } else {
+            others.push(item);
+        }
+    });
+    
+    console.log('Grouped items - TOTVS:', totvs.length, 'Others:', others.length);
+    
+    const grouped = [];
+    
+    // Create TOTVS section header if there are TOTVS items
+    if (totvs.length > 0) {
+        // Group TOTVS items by matching titles (card + ATA relationship)
+        const totvsGrouped = groupTOTVSItems(totvs);
+        
+        // Add TOTVS section header
+        grouped.push({
+            parent: {
+                id: 'totvs-header',
+                fields: {
+                    'System.Title': '🏢 TOTVS',
+                    'System.State': 'Agrupamento',
+                    'System.WorkItemType': 'Group'
+                },
+                isGroupHeader: true
+            },
+            children: totvsGrouped
+        });
+    }
+    
+    // Add other work items as standalone groups
+    others.forEach(other => {
+        grouped.push({
+            parent: other,
+            children: []
+        });
+    });
+    
+    console.log('Final grouped structure:', grouped.length, 'groups');
+    return grouped;
+}
+
+function groupTOTVSItems(totvsItems) {
+    const grouped = [];
+    const used = new Set();
+    
+    // First, separate tasks/cards from ATAs
+    const tasks = totvsItems.filter(item => {
+        const itemType = determineWorkItemType(item);
+        return itemType !== 'ATA';
+    });
+    
+    const atas = totvsItems.filter(item => {
+        const itemType = determineWorkItemType(item);
+        return itemType === 'ATA';
+    });
+    
+    console.log('TOTVS separation - Tasks:', tasks.length, 'ATAs:', atas.length);
+    
+    // Group each task with its related ATAs
+    tasks.forEach(task => {
+        if (used.has(task.id)) return;
+        
+        const taskTitle = (task.fields['System.Title'] || '');
+        console.log('Processing task:', taskTitle);
+        
+        // Find ATAs that belong to this task
+        const relatedATAs = atas.filter(ata => {
+            if (used.has(ata.id)) return false;
+            
+            const ataTitle = (ata.fields['System.Title'] || '');
+            
+            // Remove [ATA] prefix and compare the rest
+            const cleanTaskTitle = taskTitle.replace(/^\[.*?\]/, '').trim();
+            const cleanAtaTitle = ataTitle.replace(/^\[ATA\]/, '').trim();
+            
+            console.log('Comparing:', cleanTaskTitle, 'vs', cleanAtaTitle);
+            
+            // Check if the ATA title contains the task title (without [ATA] prefix)
+            const isMatch = cleanAtaTitle.includes(cleanTaskTitle) || 
+                           cleanTaskTitle.includes(cleanAtaTitle) ||
+                           areTitlesExactMatch(cleanTaskTitle, cleanAtaTitle);
+            
+            if (isMatch) {
+                console.log('MATCH found:', ataTitle, 'belongs to', taskTitle);
+            }
+            
+            return isMatch;
+        });
+        
+        // Mark items as used
+        used.add(task.id);
+        relatedATAs.forEach(ata => {
+            used.add(ata.id);
+            console.log('Marking ATA as used:', ata.fields['System.Title']);
+        });
+        
+        // Create the group
+        grouped.push({
+            parent: task,
+            children: relatedATAs
+        });
+        
+        console.log(`Task "${taskTitle}" grouped with ${relatedATAs.length} ATAs`);
+    });
+    
+    // Add any remaining ATAs that weren't grouped
+    atas.forEach(ata => {
+        if (!used.has(ata.id)) {
+            console.log('Orphan ATA:', ata.fields['System.Title']);
+            grouped.push({
+                parent: ata,
+                children: []
+            });
+        }
+    });
+    
+    console.log('Final TOTVS grouping:', grouped.length, 'groups');
+    return grouped;
+}
+
+function areTitlesExactMatch(title1, title2) {
+    // Remove common prefixes and suffixes for exact matching
+    const clean1 = title1.toLowerCase()
+        .replace(/^\[.*?\]/g, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+    const clean2 = title2.toLowerCase()
+        .replace(/^\[.*?\]/g, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+    
+    // Check if they are essentially the same after cleaning
+    return clean1 === clean2 || 
+           clean1.includes(clean2) || 
+           clean2.includes(clean1) ||
+           // Check for date variations (29/09/2025 vs 10/10/2025 etc)
+           clean1.replace(/\d{2}\/\d{2}\/\d{4}/, 'DATE') === clean2.replace(/\d{2}\/\d{2}\/\d{4}/, 'DATE');
+}
+
+function areTitlesRelated(title1, title2) {
+    // Remove common words and compare significant words
+    const commonWords = ['de', 'da', 'do', 'para', 'com', 'em', 'na', 'no', 'e', 'o', 'a', 'totvs'];
+    
+    const words1 = title1.split(/\s+/).filter(word => 
+        word.length > 2 && !commonWords.includes(word.toLowerCase())
+    );
+    const words2 = title2.split(/\s+/).filter(word => 
+        word.length > 2 && !commonWords.includes(word.toLowerCase())
+    );
+    
+    // Check if at least 2 significant words match
+    const matchCount = words1.filter(word1 => 
+        words2.some(word2 => word2.includes(word1) || word1.includes(word2))
+    ).length;
+    
+    return matchCount >= 2;
+}
+
+function generateHierarchicalHTML(groupedItems) {
+    let html = '<div class="work-items-hierarchical">';
+    
+    groupedItems.forEach((group, groupIndex) => {
+        const hasChildren = group.children && group.children.length > 0;
+        const isGroupHeader = group.parent.isGroupHeader;
+        
+        if (isGroupHeader && hasChildren) {
+            // TOTVS Section Header with nested groups
+            html += `
+                <div class="work-item-group totvs-section">
+                    <div class="work-item-parent has-children group-header" onclick="toggleGroup(${groupIndex})">
+                        <div class="expand-indicator">
+                            <i class="fas fa-chevron-right" id="chevron-${groupIndex}"></i>
+                        </div>
+                        <div class="totvs-header">
+                            <h3><i class="fas fa-building"></i> ${group.parent.fields['System.Title']}</h3>
+                            <span class="item-count">${group.children.length} grupos</span>
+                        </div>
+                    </div>
+                    <div class="work-item-children totvs-children" id="children-${groupIndex}" style="display: none;">
+                        ${group.children.map((subGroup, subIndex) => {
+                            const subHasChildren = subGroup.children && subGroup.children.length > 0;
+                            const subGroupId = `${groupIndex}-${subIndex}`;
+                            
+                            if (subHasChildren) {
+                                return `
+                                    <div class="work-item-child totvs-subgroup">
+                                        <div class="work-item-parent has-children" onclick="toggleGroup('${subGroupId}')">
+                                            <div class="expand-indicator">
+                                                <i class="fas fa-chevron-right" id="chevron-${subGroupId}"></i>
+                                            </div>
+                                            ${createWorkItemCard(subGroup.parent)}
+                                        </div>
+                                        <div class="work-item-children" id="children-${subGroupId}" style="display: none;">
+                                            ${subGroup.children.map(child => `
+                                                <div class="work-item-child">
+                                                    ${createWorkItemCard(child)}
+                                                </div>
+                                            `).join('')}
+                                        </div>
+                                    </div>
+                                `;
+                            } else {
+                                return `
+                                    <div class="work-item-child totvs-subgroup">
+                                        <div class="work-item-single">
+                                            ${createWorkItemCard(subGroup.parent)}
+                                        </div>
+                                    </div>
+                                `;
+                            }
+                        }).join('')}
+                    </div>
+                </div>
+            `;
+        } else if (hasChildren) {
+            // Regular expandable group
+            const parentCard = createWorkItemCard(group.parent);
+            html += `
+                <div class="work-item-group">
+                    <div class="work-item-parent has-children" onclick="toggleGroup(${groupIndex})">
+                        <div class="expand-indicator">
+                            <i class="fas fa-chevron-right" id="chevron-${groupIndex}"></i>
+                        </div>
+                        ${parentCard}
+                    </div>
+                    <div class="work-item-children" id="children-${groupIndex}" style="display: none;">
+                        ${group.children.map(child => `
+                            <div class="work-item-child">
+                                ${createWorkItemCard(child)}
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        } else {
+            // Single item without children
+            const parentCard = createWorkItemCard(group.parent);
+            html += `
+                <div class="work-item-group">
+                    <div class="work-item-single">
+                        ${parentCard}
+                    </div>
+                </div>
+            `;
+        }
+    });
+    
+    html += '</div>';
+    return html;
+}
+
+function toggleGroup(groupIndex) {
+    const childrenContainer = document.getElementById(`children-${groupIndex}`);
+    const chevron = document.getElementById(`chevron-${groupIndex}`);
+    
+    if (!childrenContainer || !chevron) {
+        console.warn('Could not find group elements for index:', groupIndex);
+        return;
+    }
+    
+    if (childrenContainer.style.display === 'none') {
+        childrenContainer.style.display = 'block';
+        chevron.classList.remove('fa-chevron-right');
+        chevron.classList.add('fa-chevron-down');
+    } else {
+        childrenContainer.style.display = 'none';
+        chevron.classList.remove('fa-chevron-down');
+        chevron.classList.add('fa-chevron-right');
+    }
 }
 
 function createWorkItemCard(item) {
