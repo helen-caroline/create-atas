@@ -406,6 +406,16 @@ function areTitlesRelated(title1, title2) {
 function generateHierarchicalHTML(groupedItems) {
     let html = '<div class="work-items-hierarchical">';
     
+    // Add table header
+    html += `
+        <div class="work-items-table-header">
+            <div class="table-col-id">ID</div>
+            <div class="table-col-title">Título</div>
+            <div class="table-col-status">Status</div>
+            <div class="table-col-actions">Ações</div>
+        </div>
+    `;
+    
     groupedItems.forEach((group, groupIndex) => {
         const hasChildren = group.children && group.children.length > 0;
         const isGroupHeader = group.parent.isGroupHeader;
@@ -570,38 +580,30 @@ function createWorkItemCard(item) {
     return `
         <div class="work-item-card" data-id="${item.id || 'unknown'}">
             <div class="card-header">
-                <span class="card-id">#${item.id || 'N/A'}</span>
-                <div class="card-actions">
+                <div class="card-left">
+                    <span class="card-id">#${item.id || 'N/A'}</span>
+                    <h4 class="card-title">${escapeHtml(title)}</h4>
+                </div>
+                <div class="card-right">
+                    <div class="card-meta">
+                        <span class="card-tag card-type ${typeClass}">${workItemType}</span>
+                        <span class="card-tag status ${statusClass}">${status}</span>
+                        ${priority ? `<span class="card-tag priority ${priorityClass}">P${priority}</span>` : ''}
+                    </div>
+                    <div class="card-assignee">
+                        ${assignedTo ? escapeHtml(assignedTo.displayName || assignedTo.uniqueName || 'Usuário') : 'Não atribuído'}
+                    </div>
+                    <div class="card-date">
+                        ${formatDate(createdDate)}
+                    </div>
                     ${isATA ? 
                         `<button class="card-button edit-ata-btn" onclick="openATAEditor('${item.id}', event)">
-                            <i class="fas fa-edit"></i> Editar
+                            <i class="fas fa-edit"></i>
                         </button>` :
                         `<a href="${item.url || '#'}" target="_blank" class="card-link">
-                            <i class="fas fa-external-link-alt"></i> Abrir
+                            <i class="fas fa-external-link-alt"></i>
                         </a>`
                     }
-                </div>
-            </div>
-            
-            <h4 class="card-title">${escapeHtml(title)}</h4>
-            
-            <div class="card-description">
-                ${description ? escapeHtml(stripHtml(description).substring(0, 150)) + '...' : 'Sem descrição'}
-            </div>
-            
-            <div class="card-meta">
-                <span class="card-tag card-type ${typeClass}">${workItemType}</span>
-                <span class="card-tag status ${statusClass}">${status}</span>
-                ${priority ? `<span class="card-tag priority ${priorityClass}">${priorityText}</span>` : ''}
-            </div>
-            
-            <div class="card-footer">
-                <div class="card-date">
-                    <i class="fas fa-calendar-alt"></i>
-                    ${formatDate(createdDate)}
-                </div>
-                <div class="card-assignee">
-                    ${assignedTo ? escapeHtml(assignedTo.displayName || assignedTo.uniqueName || 'Usuário') : 'Não atribuído'}
                 </div>
             </div>
         </div>
@@ -673,13 +675,8 @@ function getPriorityClass(priority) {
 }
 
 function getPriorityText(priority) {
-    const priorityMap = {
-        1: 'Prioridade 1 (Alta)',
-        2: 'Prioridade 2 (Média)',
-        3: 'Prioridade 3 (Baixa)',
-        4: 'Prioridade 4 (Muito Baixa)'
-    };
-    return priorityMap[priority] || `Prioridade ${priority}`;
+    if (!priority) return '';
+    return `P${priority}`;
 }
 
 function displaySprintInfo(sprint) {
