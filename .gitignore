@@ -2,3 +2,4 @@ token.txt
 .env
 ATAs/*
 .venv
+__pycache__
