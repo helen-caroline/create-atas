@@ -20,6 +20,10 @@ function setupEventListeners() {
     document.getElementById('typeFilter').addEventListener('change', filterCards);
     document.getElementById('statusFilter').addEventListener('change', filterCards);
     document.getElementById('priorityFilter').addEventListener('change', filterCards);
+    const sortSelect = document.getElementById('sortOrder');
+    if (sortSelect) {
+        sortSelect.addEventListener('change', filterCards);
+    }
 }
 
 async function loadWorkItems() {
@@ -115,7 +119,9 @@ function displayWorkItems(workItems) {
     }
 
     // Group work items hierarchically: Tasks as parents, ATAs as children
-    const groupedItems = groupWorkItemsHierarchically(validWorkItems);
+    let groupedItems = groupWorkItemsHierarchically(validWorkItems);
+    // Aplicar ordenação preservando hierarquia
+    groupedItems = applySortingToGroups(groupedItems);
     
     // Generate hierarchical HTML
     const hierarchicalHTML = generateHierarchicalHTML(groupedItems);
@@ -190,6 +196,68 @@ function groupWorkItemsHierarchically(workItems) {
     console.log('Final grouped structure:', grouped.length, 'groups');
     return grouped;
 }
+
+// ================= ORDENACAO =====================
+function applySortingToGroups(groups) {
+    const sortValue = (document.getElementById('sortOrder') || {}).value;
+    if (!sortValue) return groups; // sem ordenação custom
+
+    // Funções auxiliares
+    const getTitle = item => (item?.fields?.['System.Title'] || '').toLowerCase();
+    const getPriority = item => item?.fields?.['Microsoft.VSTS.Common.Priority'] || 999;
+    const getStatus = item => (item?.fields?.['System.State'] || '').toLowerCase();
+    const getCreated = item => new Date(item?.fields?.['System.CreatedDate'] || 0).getTime();
+
+    // Comparator de item simples
+    function compareItems(a, b) {
+        switch (sortValue) {
+            case 'title-asc':
+                return getTitle(a).localeCompare(getTitle(b));
+            case 'title-desc':
+                return getTitle(b).localeCompare(getTitle(a));
+            case 'priority-asc':
+                return getPriority(a) - getPriority(b);
+            case 'priority-desc':
+                return getPriority(b) - getPriority(a);
+            case 'status':
+                return getStatus(a).localeCompare(getStatus(b)) || getTitle(a).localeCompare(getTitle(b));
+            case 'created-newest':
+                return getCreated(b) - getCreated(a);
+            case 'created-oldest':
+                return getCreated(a) - getCreated(b);
+            default:
+                return 0;
+        }
+    }
+
+    // Não reordenar cabeçalhos de grupos principais (ex: TOTVS / Rotinas)
+    return groups.map(group => {
+        // Se for cabeçalho de seção (isGroupHeader) ordenamos apenas os subgroups dentro dele (cada child é um subgroup)
+        if (group.parent?.isGroupHeader) {
+            const sortedChildren = group.children
+                .map(subGroup => {
+                    // subGroup pode ser um grupo com parent + children
+                    if (subGroup.children && subGroup.children.length > 0) {
+                        return {
+                            parent: subGroup.parent,
+                            children: [...subGroup.children].sort(compareItems)
+                        };
+                    }
+                    return subGroup; // item simples
+                })
+                .sort((a, b) => compareItems(a.parent, b.parent)); // ordenar os pais dos subgrupos
+            return { ...group, children: sortedChildren };
+        }
+
+        // Grupo normal com filhos (ex: uma task com ATAs)
+        if (group.children && group.children.length > 0) {
+            const sortedChildren = [...group.children].sort(compareItems);
+            return { ...group, children: sortedChildren };
+        }
+        return group; // item sem filhos
+    });
+}
+// =================================================
 
 function groupRotinasItems(rotinasItems) {
     const grouped = [];
