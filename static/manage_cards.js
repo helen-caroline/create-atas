@@ -564,13 +564,23 @@ function createWorkItemCard(item) {
     const createdDate = fields['System.CreatedDate'];
     const assignedTo = fields['System.AssignedTo'];
     
+    // Determine if this is an ATA
+    const isATA = workItemType === 'ATA';
+    
     return `
         <div class="work-item-card" data-id="${item.id || 'unknown'}">
             <div class="card-header">
                 <span class="card-id">#${item.id || 'N/A'}</span>
-                <a href="${item.url || '#'}" target="_blank" class="card-link">
-                    <i class="fas fa-external-link-alt"></i> Abrir
-                </a>
+                <div class="card-actions">
+                    ${isATA ? 
+                        `<button class="card-button edit-ata-btn" onclick="openATAEditor('${item.id}', event)">
+                            <i class="fas fa-edit"></i> Editar
+                        </button>` :
+                        `<a href="${item.url || '#'}" target="_blank" class="card-link">
+                            <i class="fas fa-external-link-alt"></i> Abrir
+                        </a>`
+                    }
+                </div>
             </div>
             
             <h4 class="card-title">${escapeHtml(title)}</h4>
@@ -753,9 +763,236 @@ function capitalizeFirst(str) {
     return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
+// ATA Editor Functions
+function openATAEditor(workItemId, event) {
+    event.preventDefault();
+    event.stopPropagation();
+    
+    console.log('Opening ATA editor for:', workItemId);
+    
+    // Find the work item data
+    const workItem = allWorkItems.find(item => item.id.toString() === workItemId.toString());
+    
+    if (!workItem) {
+        console.error('Work item not found:', workItemId);
+        alert('Erro: Work item não encontrado');
+        return;
+    }
+    
+    // Create and show the modal
+    createATAEditorModal(workItem);
+}
+
+function createATAEditorModal(workItem) {
+    // Remove existing modal if any
+    const existingModal = document.getElementById('ataEditorModal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    // Get current values from work item
+    const fields = workItem.fields;
+    const title = fields['System.Title'] || '';
+    const description = fields['System.Description'] || '';
+    
+    // Create modal HTML
+    const modalHTML = `
+        <div id="ataEditorModal" class="ata-modal-overlay">
+            <div class="ata-modal">
+                <div class="ata-modal-header">
+                    <h2><i class="fas fa-edit"></i> Editar ATA #${workItem.id}</h2>
+                    <button class="ata-modal-close" onclick="closeATAEditor()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                
+                <div class="ata-modal-content">
+                    <form id="ataEditorForm">
+                        <!-- Template Selection -->
+                        <div class="ata-form-group">
+                            <label for="templateType">Template:</label>
+                            <select id="templateType" name="templateType">
+                                <option value="ATA">ATA</option>
+                                <option value="Activities Report">Activities Report</option>
+                            </select>
+                        </div>
+                        
+                        <!-- Title -->
+                        <div class="ata-form-group">
+                            <label for="ataTitle">Título da ATA:</label>
+                            <input type="text" id="ataTitle" name="ataTitle" value="${escapeHtml(title)}" required>
+                        </div>
+                        
+                        <!-- Location -->
+                        <div class="ata-form-group">
+                            <label for="location">Location:</label>
+                            <input type="text" id="location" name="location" placeholder="Ex: Sala de reuniões, Microsoft Teams, etc.">
+                        </div>
+                        
+                        <!-- Date and Time Row -->
+                        <div class="ata-form-row">
+                            <div class="ata-form-group">
+                                <label for="startDateTime">Date and Time - Start:</label>
+                                <input type="datetime-local" id="startDateTime" name="startDateTime">
+                            </div>
+                            
+                            <div class="ata-form-group">
+                                <label for="finishDateTime">Date and Time - Finish:</label>
+                                <input type="datetime-local" id="finishDateTime" name="finishDateTime">
+                            </div>
+                        </div>
+                        
+                        <!-- Staves -->
+                        <div class="ata-form-group">
+                            <label for="meetingStave">Staves - #01 Meeting Stave Subject:</label>
+                            <input type="text" id="meetingStave" name="meetingStave" placeholder="Assunto principal da reunião">
+                        </div>
+                        
+                        <!-- Meeting Subject -->
+                        <div class="ata-form-group">
+                            <label for="meetingSubject">Meeting - #01 Subject:</label>
+                            <input type="text" id="meetingSubject" name="meetingSubject" placeholder="Assunto específico discutido">
+                        </div>
+                        
+                        <!-- Comments -->
+                        <div class="ata-form-group">
+                            <label for="comments">Comments:</label>
+                            <textarea id="comments" name="comments" rows="6" placeholder="Comentários detalhados, discussões e observações da reunião...">${escapeHtml(stripHtml(description))}</textarea>
+                        </div>
+                        
+                        <!-- Next Steps -->
+                        <div class="ata-form-group">
+                            <label for="nextSteps">Next Steps:</label>
+                            <div class="next-steps-container">
+                                <div class="next-steps-header">
+                                    <div class="next-steps-col">Actions</div>
+                                    <div class="next-steps-col">Responsible</div>
+                                    <div class="next-steps-col">Date</div>
+                                </div>
+                                <div class="next-steps-rows">
+                                    ${Array.from({length: 10}, (_, i) => `
+                                        <div class="next-steps-row">
+                                            <div class="next-steps-col">
+                                                <input type="text" name="action_${i + 1}" placeholder="#0${i + 1}" class="next-steps-input">
+                                            </div>
+                                            <div class="next-steps-col">
+                                                <input type="text" name="responsible_${i + 1}" placeholder="#0${i + 1}" class="next-steps-input">
+                                            </div>
+                                            <div class="next-steps-col">
+                                                <input type="date" name="date_${i + 1}" placeholder="Select a date..." class="next-steps-input next-steps-date">
+                                            </div>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                
+                <div class="ata-modal-footer">
+                    <button type="button" class="ata-btn ata-btn-secondary" onclick="closeATAEditor()">
+                        <i class="fas fa-times"></i> Cancelar
+                    </button>
+                    <button type="button" class="ata-btn ata-btn-primary" onclick="saveATA('${workItem.id}')">
+                        <i class="fas fa-save"></i> Salvar ATA
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Add modal to page
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+    
+    // Show modal with animation
+    setTimeout(() => {
+        document.getElementById('ataEditorModal').classList.add('show');
+    }, 10);
+}
+
+function closeATAEditor() {
+    const modal = document.getElementById('ataEditorModal');
+    if (modal) {
+        modal.classList.remove('show');
+        setTimeout(() => {
+            modal.remove();
+        }, 300);
+    }
+}
+
+async function saveATA(workItemId) {
+    const form = document.getElementById('ataEditorForm');
+    const formData = new FormData(form);
+    
+    // Convert FormData to object
+    const ataData = {};
+    for (let [key, value] of formData.entries()) {
+        ataData[key] = value;
+    }
+    
+    // Process Next Steps into structured format
+    const nextSteps = [];
+    for (let i = 1; i <= 10; i++) {
+        const action = ataData[`action_${i}`];
+        const responsible = ataData[`responsible_${i}`];
+        const date = ataData[`date_${i}`];
+        
+        if (action || responsible || date) {
+            nextSteps.push({
+                number: i,
+                action: action || '',
+                responsible: responsible || '',
+                date: date || ''
+            });
+        }
+        
+        // Remove individual fields from ataData
+        delete ataData[`action_${i}`];
+        delete ataData[`responsible_${i}`];
+        delete ataData[`date_${i}`];
+    }
+    
+    ataData.nextSteps = nextSteps;
+    
+    console.log('Saving ATA data:', ataData);
+    
+    try {
+        // Show loading state
+        const saveBtn = document.querySelector('.ata-btn-primary');
+        const originalText = saveBtn.innerHTML;
+        saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
+        saveBtn.disabled = true;
+        
+        // TODO: Implement actual save to Azure DevOps
+        // For now, just simulate success
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // Show success message
+        alert('ATA salva com sucesso!');
+        
+        // Close modal
+        closeATAEditor();
+        
+        // Reload work items to show updated data
+        await loadWorkItems();
+        
+    } catch (error) {
+        console.error('Error saving ATA:', error);
+        alert('Erro ao salvar ATA: ' + error.message);
+        
+        // Restore button
+        const saveBtn = document.querySelector('.ata-btn-primary');
+        saveBtn.innerHTML = originalText;
+        saveBtn.disabled = false;
+    }
+}
+
 // Export functions for potential future use
 window.ManageCards = {
     loadWorkItems,
     filterCards,
-    updateCardsCount
+    updateCardsCount,
+    openATAEditor,
+    closeATAEditor,
+    saveATA
 };
