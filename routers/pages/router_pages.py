@@ -20,3 +20,9 @@ def pipeline():
     """Página separada para gerenciar pipeline"""
     data = PagesController.pipeline()
     return render_template("pipeline.html", **data)
+
+@pages_bp.route("/manage-cards")
+def manage_cards():
+    """Página para gerenciar cards"""
+    data = PagesController.manage_cards()
+    return render_template("manage_cards.html", **data)

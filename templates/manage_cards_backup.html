@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Manage Cards - Create ATAs</title>
+    <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/static/dashboard.css">
+    <link rel="stylesheet" href="/static/manage_cards.css">
+</head>
+<body>
+    <div class="app-wrapper">
+        <!-- Sidebar -->
+        <nav class="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo">
+                    <i class="fas fa-file-text"></i>
+                    <h2>Create ATAs</h2>
+                </div>
+                <button class="sidebar-toggle" id="sidebarToggle">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </div>
+            
+            <ul class="sidebar-menu">
+                <li class="menu-item">
+                    <a href="/" class="menu-link">
+                        <i class="fas fa-home"></i>
+                        <span>Dashboard</span>
+                    </a>
+                </li>
+                <li class="menu-item">
+                    <a href="/atas" class="menu-link">
+                        <i class="fas fa-file-alt"></i>
+                        <span>Gerador de ATAs</span>
+                    </a>
+                </li>
+                <li class="menu-item">
+                    <a href="/pipeline" class="menu-link">
+                        <i class="fas fa-cogs"></i>
+                        <span>Pipeline Cards</span>
+                    </a>
+                </li>
+                <li class="menu-item active">
+                    <a href="/manage-cards" class="menu-link">
+                        <i class="fas fa-tasks"></i>
+                        <span>Manage Cards</span>
+                    </a>
+                </li>
+            </ul>
+            
+            <div class="sidebar-footer">
+                <div class="user-info">
+                    <i class="fas fa-user-circle"></i>
+                    <span>Admin</span>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Header -->
+            <header class="main-header">
+                <div class="header-left">
+                    <button class="mobile-menu-toggle" id="mobileMenuToggle">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <h1>Manage Cards</h1>
+                </div>
+                <div class="header-right">
+                    <div class="date-info">
+                        <i class="fas fa-calendar"></i>
+                        <span id="currentDate"></span>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Manage Cards Content -->
+            <div class="dashboard-container">
+                <div class="manage-cards-layout">
+                    <!-- Sprint Info and Filters -->
+                    <div class="top-section">
+                        <!-- Sprint Info -->
+                        <div class="sprint-info-compact" id="sprintInfo" style="display: none;">
+                            <div class="sprint-icon">
+                                <i class="fas fa-clock"></i>
+                            </div>
+                            <div class="sprint-details" id="sprintDetails">
+                                <!-- Sprint details will be populated here -->
+                            </div>
+                        </div>
+
+                        <!-- Filters Section -->
+                        <div class="filters-section">
+                            <div class="search-box">
+                                <i class="fas fa-search"></i>
+                                <input type="text" id="searchCards" placeholder="Buscar cards...">
+                            </div>
+                            
+                            <div class="filter-row">
+                                <div class="filter-group">
+                                    <label>Tipo:</label>
+                                    <select id="typeFilter">
+                                        <option value="">Todos os Tipos</option>
+                                        <option value="task">Task</option>
+                                        <option value="ata">ATA</option>
+                                        <option value="bug">Bug</option>
+                                        <option value="feature">Feature</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="filter-group">
+                                    <label>Status:</label>
+                                    <select id="statusFilter">
+                                        <option value="">Todos os Status</option>
+                                        <option value="new">New</option>
+                                        <option value="active">Active</option>
+                                        <option value="resolved">Resolved</option>
+                                        <option value="closed">Closed</option>
+                                        <option value="proposed">Proposed</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="filter-group">
+                                    <label>Prioridade:</label>
+                                    <select id="priorityFilter">
+                                        <option value="">Todas as Prioridades</option>
+                                        <option value="1">Prioridade 1 (Alta)</option>
+                                        <option value="2">Prioridade 2 (Média)</option>
+                                        <option value="3">Prioridade 3 (Baixa)</option>
+                                        <option value="4">Prioridade 4 (Muito Baixa)</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Cards Section -->
+                    <div class="cards-section">
+                        <div class="cards-header">
+                            <h3><i class="fas fa-th-list"></i> Meus Cards</h3>
+                            <div class="cards-count" id="cardsCount">
+                                <span id="visibleCount">0</span> de <span id="totalCount">0</span> cards
+                            </div>
+                        </div>
+                        
+                        <!-- Cards Container -->
+                        <div class="cards-grid" id="cardsContainer">
+                            <!-- Loading state -->
+                            <div class="loading-cards" id="loadingCards">
+                                <i class="fas fa-spinner fa-spin"></i>
+                                <p>Carregando seus cards da sprint ativa...</p>
+                            </div>
+                        </div>
+
+                        <!-- No cards message -->
+                        <div class="no-cards-message" id="noCardsMessage" style="display: none;">
+                            <i class="fas fa-inbox"></i>
+                            <p>Nenhum card encontrado</p>
+                            <small>Verifique se você tem work items atribuídos na sprint atual</small>
+                        </div>
+
+                        <!-- Error message -->
+                        <div class="error-message" id="errorMessage" style="display: none;">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <p id="errorText">Erro ao carregar cards</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="/static/dashboard.js"></script>
+    <script>
+        // Set current date
+        document.getElementById('currentDate').textContent = new Date().toLocaleDateString('pt-BR');
+        
+        console.log('Manage Cards page loaded - connecting to Azure DevOps Konia');
+    </script>
+
+    <!-- Load Manage Cards JavaScript -->
+    <script src="/static/manage_cards.js"></script>
+</body>
+</html>

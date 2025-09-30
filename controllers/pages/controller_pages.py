@@ -16,3 +16,8 @@ class PagesController:
     def pipeline():
         """Lógica da página de gerenciamento de pipeline"""
         return {}
+
+    @staticmethod
+    def manage_cards():
+        """Lógica da página de gerenciamento de cards"""
+        return {}

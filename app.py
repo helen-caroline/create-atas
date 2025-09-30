@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 # Imports dos routers
 from routers.pages.router_pages import pages_bp
 from routers.ata.router_ata import ata_bp
+from routers.ata.router_boards import boards_bp
 from routers.pipeline.router_pipeline import pipeline_bp
 
 # Carregar variáveis de ambiente
@@ -16,6 +17,7 @@ app = Flask(__name__)
 # Registrar blueprints
 app.register_blueprint(pages_bp)
 app.register_blueprint(ata_bp)
+app.register_blueprint(boards_bp)
 app.register_blueprint(pipeline_bp)
 
 if __name__ == "__main__":
