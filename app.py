@@ -147,7 +147,21 @@ def get_pipeline_file():
         response = requests.get(api_url, headers=headers, params=params)
         
         if response.status_code == 200:
-            return jsonify({"content": response.text})
+            # Garantir que o conteúdo seja interpretado como UTF-8
+            # Primeira abordagem: definir encoding antes de acessar .text
+            response.encoding = 'utf-8'
+            content = response.text
+            
+            # Segunda abordagem: se ainda houver problemas, decodificar bytes diretamente
+            if 'Ã' in content:  # Detectar problemas de encoding
+                try:
+                    # Forçar decodificação UTF-8 a partir dos bytes
+                    content = response.content.decode('utf-8')
+                except UnicodeDecodeError:
+                    # Fallback: tentar latin-1 e depois recodificar
+                    content = response.content.decode('latin-1').encode('latin-1').decode('utf-8')
+            
+            return jsonify({"content": content})
         elif response.status_code == 404:
             return jsonify({"content": ""})  # Arquivo não existe ainda
         else:
