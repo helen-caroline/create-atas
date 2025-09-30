@@ -181,13 +181,11 @@ function groupWorkItemsHierarchically(workItems) {
         });
     }
     
-    // Add other work items as standalone groups
-    others.forEach(other => {
-        grouped.push({
-            parent: other,
-            children: []
-        });
-    });
+    // Group other work items (cards + ATAs relationship)
+    if (others.length > 0) {
+        const othersGrouped = groupOtherItems(others);
+        grouped.push(...othersGrouped);
+    }
     
     console.log('Final grouped structure:', grouped.length, 'groups');
     return grouped;
@@ -206,6 +204,85 @@ function groupRotinasItems(rotinasItems) {
     });
     
     console.log('Rotinas grouping:', grouped.length, 'items');
+    return grouped;
+}
+
+function groupOtherItems(otherItems) {
+    const grouped = [];
+    const used = new Set();
+    
+    // First, separate tasks/cards from ATAs
+    const tasks = otherItems.filter(item => {
+        const itemType = determineWorkItemType(item);
+        return itemType !== 'ATA';
+    });
+    
+    const atas = otherItems.filter(item => {
+        const itemType = determineWorkItemType(item);
+        return itemType === 'ATA';
+    });
+    
+    console.log('Other items separation - Tasks/Cards:', tasks.length, 'ATAs:', atas.length);
+    
+    // Group each task/card with its related ATAs
+    tasks.forEach(task => {
+        if (used.has(task.id)) return;
+        
+        const taskTitle = (task.fields['System.Title'] || '');
+        console.log('Processing other task:', taskTitle);
+        
+        // Find ATAs that belong to this task
+        const relatedATAs = atas.filter(ata => {
+            if (used.has(ata.id)) return false;
+            
+            const ataTitle = (ata.fields['System.Title'] || '');
+            
+            // Remove [ATA] prefix and compare the rest
+            const cleanTaskTitle = taskTitle.replace(/^\[.*?\]/, '').trim();
+            const cleanAtaTitle = ataTitle.replace(/^\[ATA\]/, '').trim();
+            
+            console.log('Comparing other items:', cleanTaskTitle, 'vs', cleanAtaTitle);
+            
+            // Check if the ATA title contains the task title (without [ATA] prefix)
+            const isMatch = cleanAtaTitle.includes(cleanTaskTitle) || 
+                           cleanTaskTitle.includes(cleanAtaTitle) ||
+                           areTitlesExactMatch(cleanTaskTitle, cleanAtaTitle);
+            
+            if (isMatch) {
+                console.log('OTHER MATCH found:', ataTitle, 'belongs to', taskTitle);
+            }
+            
+            return isMatch;
+        });
+        
+        // Mark items as used
+        used.add(task.id);
+        relatedATAs.forEach(ata => {
+            used.add(ata.id);
+            console.log('Marking other ATA as used:', ata.fields['System.Title']);
+        });
+        
+        // Create the group
+        grouped.push({
+            parent: task,
+            children: relatedATAs
+        });
+        
+        console.log(`Other task "${taskTitle}" grouped with ${relatedATAs.length} ATAs`);
+    });
+    
+    // Add any remaining ATAs that weren't grouped
+    atas.forEach(ata => {
+        if (!used.has(ata.id)) {
+            console.log('Other orphan ATA:', ata.fields['System.Title']);
+            grouped.push({
+                parent: ata,
+                children: []
+            });
+        }
+    });
+    
+    console.log('Final other items grouping:', grouped.length, 'groups');
     return grouped;
 }
 

@@ -57,17 +57,19 @@
 .work-item-group {
     border: 1px solid #e0e0e0;
     border-radius: 8px;
-    overflow: hidden;
     background: white;
+    margin-bottom: 10px;
 }
 
 .work-item-parent {
     display: flex;
-    align-items: center;
+    align-items: stretch;
     cursor: pointer;
     background: #f8f9fa;
     border-bottom: 1px solid #e0e0e0;
     transition: background-color 0.2s ease;
+    padding: 10px;
+    gap: 10px;
 }
 
 .work-item-parent:hover {
@@ -75,17 +77,18 @@
 }
 
 .work-item-single {
-    background: white;
+    background: transparent;
 }
 
 .expand-indicator {
-    padding: 15px;
+    padding: 10px;
     color: #666;
     min-width: 40px;
     display: flex;
     align-items: center;
     justify-content: center;
     transition: color 0.2s ease;
+    align-self: flex-start;
 }
 
 .work-item-parent:hover .expand-indicator {
@@ -147,15 +150,60 @@
 /* Enhanced parent card styling */
 .work-item-parent .work-item-card {
     margin: 0;
-    border: none;
-    box-shadow: none;
-    background: transparent;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    flex: 1;
+}
+
+.work-item-parent .work-item-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    border-color: #4f46e5;
+}
+
+.work-item-parent .work-item-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #4f46e5, #7c3aed);
 }
 
 .work-item-single .work-item-card {
+    /* Reset overrides to let the original card styles work */
     margin: 0;
-    border: none;
-    box-shadow: none;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.work-item-single .work-item-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    border-color: #4f46e5;
+}
+
+.work-item-single .work-item-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #4f46e5, #7c3aed);
 }
 
 /* Group indicators for expandable items */
