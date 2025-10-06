@@ -2,42 +2,58 @@
    ATA WORKSPACE - CSS STYLES
    ============================================ */
 
+/* Override header to be more compact */
+.main-header {
+    padding: 0.5rem 1.5rem !important; /* Much more compact header */
+    min-height: 50px !important;
+}
+
+.header-left h1 {
+    font-size: 1.2rem !important; /* Smaller title */
+    margin: 0 !important;
+}
+
+.date-info {
+    font-size: 0.85rem !important; /* Smaller date info */
+}
+
 .workspace-container {
     display: flex;
-    height: calc(100vh - 80px);
-    gap: 20px;
-    padding: 20px;
+    height: calc(100vh - 50px); /* Adjusted for smaller header */
+    gap: 15px; /* Reduced gap */
+    padding: 10px 15px; /* More compact padding */
     overflow: hidden;
 }
 
 /* Left Panel - ATA Generator */
 .left-panel {
     flex: 1;
-    min-width: 500px;
-    max-width: 600px;
+    min-width: 450px; /* Reduced min-width */
+    max-width: 550px; /* Reduced max-width */
     display: flex;
     flex-direction: column;
     background: white;
-    border-radius: 12px;
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+    border-radius: 8px; /* Smaller radius */
+    box-shadow: 0 1px 8px rgba(0, 0, 0, 0.08); /* Lighter shadow */
     overflow: hidden;
+    min-height: 0; /* Allow flex shrinking */
 }
 
 /* Right Panel - Cards Management */
 .right-panel {
     flex: 1;
-    min-width: 450px;
+    min-width: 400px; /* Reduced min-width */
     display: flex;
     flex-direction: column;
     background: white;
-    border-radius: 12px;
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+    border-radius: 8px; /* Smaller radius */
+    box-shadow: 0 1px 8px rgba(0, 0, 0, 0.08); /* Lighter shadow */
     overflow: hidden;
 }
 
-/* Panel Headers */
+/* Panel Headers - Much more compact */
 .panel-header {
-    padding: 20px;
+    padding: 10px 15px; /* Much more compact */
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
     display: flex;
@@ -48,15 +64,15 @@
 
 .panel-header h2 {
     margin: 0;
-    font-size: 1.2rem;
+    font-size: 1rem; /* Smaller font */
     font-weight: 600;
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
 }
 
 .panel-header i {
-    font-size: 1.1rem;
+    font-size: 0.9rem; /* Smaller icon */
 }
 
 /* ATA Generator Styles */
@@ -64,37 +80,91 @@
     flex: 1;
     display: flex;
     flex-direction: column;
-    overflow: hidden;
+    min-height: 0; /* Allow flex shrinking */
+    position: relative;
 }
 
 .form-card {
-    padding: 20px;
+    padding: 8px 15px; /* Much more compact */
     border-bottom: 1px solid #e9ecef;
+    flex: 1;
+    /* Removed max-height and overflow to show all fields */
+}
+
+/* Button container outside scroll area */
+.form-button-container {
+    padding: 6px 15px; /* Much more compact */
+    background: white;
+    border-bottom: 1px solid #e9ecef;
+    flex-shrink: 0; /* Don't shrink */
+}
+
+.generate-ata-btn {
+    width: 100%;
+    padding: 8px; /* Smaller padding */
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 4px; /* Smaller radius */
+    font-weight: 600;
+    font-size: 0.9rem; /* Smaller font */
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+    margin: 0;
+}
+
+.generate-ata-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
 }
 
 .form-card h3 {
-    margin: 0 0 20px 0;
+    margin: 0 0 6px 0; /* Much smaller margin */
     color: #495057;
-    font-size: 1.1rem;
+    font-size: 1rem; /* Smaller font */
 }
 
 .form-card label {
     display: block;
-    margin-bottom: 5px;
+    margin-bottom: 2px; /* Minimal margin */
     font-weight: 500;
     color: #495057;
-    font-size: 0.9rem;
+    font-size: 0.8rem; /* Smaller font */
 }
 
 .form-card input,
 .form-card textarea {
     width: 100%;
-    padding: 10px 12px;
+    padding: 4px 8px; /* Much smaller padding */
     border: 1px solid #ddd;
-    border-radius: 6px;
-    font-size: 0.9rem;
-    margin-bottom: 15px;
+    border-radius: 4px; /* Smaller radius */
+    font-size: 0.85rem; /* Smaller font */
+    margin-bottom: 6px; /* Minimal margin */
     transition: border-color 0.2s;
+}
+
+/* Specific styling for the last textarea (Resumo) to reduce bottom margin */
+.form-card textarea:last-of-type {
+    margin-bottom: 4px; /* Minimal margin */
+}
+
+/* Horizontal layout for form fields */
+.form-row-horizontal {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 6px;
+}
+
+.form-group {
+    flex: 1;
+}
+
+.form-group label {
+    margin-bottom: 2px;
+}
+
+.form-group input {
+    margin-bottom: 0;
 }
 
 .form-card input:focus,
@@ -102,23 +172,6 @@
     outline: none;
     border-color: #667eea;
     box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-}
-
-.form-card button {
-    width: 100%;
-    padding: 12px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    border: none;
-    border-radius: 6px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: transform 0.2s, box-shadow 0.2s;
-}
-
-.form-card button:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
 }
 
 .ata-result-section {
@@ -671,7 +724,8 @@
     .workspace-container {
         flex-direction: column;
         height: auto;
-        min-height: calc(100vh - 80px);
+        min-height: calc(100vh - 50px);
+        gap: 10px;
     }
     
     .left-panel,
@@ -681,7 +735,15 @@
     }
     
     .left-panel {
-        max-height: 600px;
+        max-height: none;
+    }
+    
+    .form-card {
+        padding: 6px 12px; /* Even more compact for tablets */
+    }
+    
+    .form-button-container {
+        padding: 5px 12px;
     }
     
     .filter-row {
@@ -695,18 +757,27 @@
 
 @media (max-width: 768px) {
     .workspace-container {
-        padding: 10px;
-        gap: 10px;
+        padding: 5px 8px; /* Very compact for mobile */
+        gap: 8px;
     }
     
     .panel-header {
-        padding: 15px;
+        padding: 8px 12px; /* Very compact for mobile */
     }
     
     .form-card,
     .ata-result-section,
     .card-edit-form {
-        padding: 15px;
+        padding: 6px 10px; /* Very compact for mobile */
+    }
+    
+    .form-button-container {
+        padding: 4px 10px;
+    }
+    
+    .form-row-horizontal {
+        flex-direction: column;
+        gap: 0;
     }
     
     .form-row {

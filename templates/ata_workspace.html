@@ -95,21 +95,30 @@
                         <div class="form-card">
                             <h3>☀️ Resumo do Dia</h3>
                             <form id="ataForm">
-                                <label for="data">Data</label>
-                                <input type="date" id="data" name="data" value="{{ hoje }}" required>
-
-                                <label for="requerimento">Número do Requerimento</label>
-                                <input type="text" id="requerimento" name="requerimento" required>
+                                <!-- Row with Date and Requerimento -->
+                                <div class="form-row-horizontal">
+                                    <div class="form-group">
+                                        <label for="data">Data</label>
+                                        <input type="date" id="data" name="data" value="{{ hoje }}" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="requerimento">Número do Requerimento</label>
+                                        <input type="text" id="requerimento" name="requerimento" required>
+                                    </div>
+                                </div>
 
                                 <label for="titulo_issue">Título da Issue (para o nome do arquivo)</label>
                                 <input type="text" id="titulo_issue" name="titulo_issue" placeholder="[ECAD] Construção do fluxo Audiovisual">
 
                                 <label for="resumo">Resumo do Usuário</label>
-                                <textarea id="resumo" name="resumo" rows="8" required></textarea>
-
-                                <button type="submit">Gerar ATA</button>
+                                <textarea id="resumo" name="resumo" rows="2" required></textarea>
                             </form>
                             <div id="ataError" class="small-note" style="display:none;margin-top:8px;color:#ff6b6b"></div>
+                        </div>
+                        
+                        <!-- Button outside scroll area -->
+                        <div class="form-button-container">
+                            <button type="submit" form="ataForm" class="generate-ata-btn">Gerar ATA</button>
                         </div>
 
                         <!-- ATA Result -->
