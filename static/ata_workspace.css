@@ -673,3 +673,78 @@
 .toast-info {
     background: linear-gradient(135deg, #17a2b8 0%, #6f42c1 100%);
 }
+
+/* Next Steps Styles */
+.next-steps-container {
+    border: 1px solid #e9ecef;
+    border-radius: 6px;
+    overflow: hidden;
+    background: #f8f9fa;
+}
+
+.next-steps-header {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr auto;
+    gap: 10px;
+    padding: 10px;
+    background: #e9ecef;
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: #495057;
+}
+
+.next-steps-rows {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.next-steps-row {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr auto;
+    gap: 10px;
+    padding: 8px 10px;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.next-steps-row:last-child {
+    border-bottom: none;
+}
+
+.next-steps-col {
+    display: flex;
+    align-items: center;
+}
+
+.next-steps-input {
+    width: 100%;
+    padding: 6px 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    transition: border-color 0.2s;
+}
+
+.next-steps-input:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
+}
+
+.next-steps-date {
+    font-size: 0.8rem;
+}
+
+.btn-clear {
+    background: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 6px 8px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.btn-clear:hover {
+    background: #c82333;
+}

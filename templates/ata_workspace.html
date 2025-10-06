@@ -157,9 +157,9 @@
                     <!-- Cards List View -->
                     <div id="cardsListView" class="cards-list-view">
                         <div class="panel-header">
-                            <h2><i class="fas fa-tasks"></i> Meus Cards</h2>
+                            <h2><i class="fas fa-clipboard-list"></i> Minhas ATAs</h2>
                             <div class="cards-count" id="cardsCount">
-                                <span id="visibleCount">0</span> de <span id="totalCount">0</span> cards
+                                <span id="visibleCount">0</span> de <span id="totalCount">0</span> ATAs
                             </div>
                         </div>
 
@@ -270,28 +270,67 @@
                                     <h3><i class="fas fa-clipboard-list"></i> Informações da ATA</h3>
                                     
                                     <div class="form-group">
-                                        <label for="ataDate">Data da ATA</label>
-                                        <input type="date" id="ataDate" name="ata_date">
+                                        <label for="templateType">Template:</label>
+                                        <select id="templateType" name="templateType">
+                                            <option value="ATA">ATA</option>
+                                            <option value="Activities Report">Activities Report</option>
+                                        </select>
                                     </div>
 
                                     <div class="form-group">
-                                        <label for="ataRequirement">Número do Requerimento</label>
-                                        <input type="text" id="ataRequirement" name="ata_requirement" placeholder="Ex: REQ-2024-001">
+                                        <label for="ataTitle">Título da ATA</label>
+                                        <input type="text" id="ataTitle" name="ata_title" placeholder="Título da ATA">
                                     </div>
 
                                     <div class="form-group">
-                                        <label for="ataSummary">Resumo da ATA</label>
-                                        <textarea id="ataSummary" name="ata_summary" rows="6" placeholder="Descreva o que foi discutido e decidido..."></textarea>
+                                        <label for="location">Location</label>
+                                        <input type="text" id="location" name="location" placeholder="Ex: Sala de reuniões, Microsoft Teams, etc.">
+                                    </div>
+
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label for="startDateTime">Date and Time - Start</label>
+                                            <input type="datetime-local" id="startDateTime" name="start_datetime">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="finishDateTime">Date and Time - Finish</label>
+                                            <input type="datetime-local" id="finishDateTime" name="finish_datetime">
+                                        </div>
                                     </div>
 
                                     <div class="form-group">
-                                        <label for="ataNextSteps">Próximos Passos</label>
-                                        <textarea id="ataNextSteps" name="ata_next_steps" rows="4" placeholder="Liste os próximos passos e responsáveis..."></textarea>
+                                        <label for="meetingStave">Staves - #01 Meeting Stave Subject</label>
+                                        <input type="text" id="meetingStave" name="meeting_stave" placeholder="Assunto principal da reunião">
                                     </div>
 
                                     <div class="form-group">
-                                        <label for="ataParticipants">Participantes</label>
-                                        <input type="text" id="ataParticipants" name="ata_participants" placeholder="Lista de participantes separados por vírgula">
+                                        <label for="meetingSubject">Meeting - #01 Subject</label>
+                                        <input type="text" id="meetingSubject" name="meeting_subject" placeholder="Assunto específico discutido">
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="comments">Comments</label>
+                                        <textarea id="comments" name="comments" rows="6" placeholder="Comentários detalhados, discussões e observações da reunião..."></textarea>
+                                    </div>
+
+                                    <!-- Next Steps -->
+                                    <div class="form-group">
+                                        <label>Next Steps</label>
+                                        <div class="next-steps-container">
+                                            <div class="next-steps-header">
+                                                <div class="next-steps-col">Actions</div>
+                                                <div class="next-steps-col">Responsible</div>
+                                                <div class="next-steps-col">Date</div>
+                                                <div class="next-steps-col">
+                                                    <button type="button" class="btn-clear" onclick="clearAllNextSteps()" title="Limpar todos os Next Steps">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <div class="next-steps-rows" id="nextStepsRows">
+                                                <!-- Next steps rows will be populated by JavaScript -->
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
 

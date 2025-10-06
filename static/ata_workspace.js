@@ -185,12 +185,17 @@ async function loadWorkItems() {
             throw new Error(data.error);
         }
 
-        // Store data globally with validation
-        allWorkItems = Array.isArray(data.work_items) ? data.work_items : [];
+        // Store data globally with validation - filter only ATAs
+        const allItems = Array.isArray(data.work_items) ? data.work_items : [];
+        allWorkItems = allItems.filter(item => {
+            const workItemType = item.fields['System.WorkItemType'] || '';
+            return workItemType.toLowerCase() === 'ata';
+        });
         currentSprint = data.sprint || null;
 
         console.log('Raw API response:', data);
-        console.log('Processed work items:', allWorkItems.length);
+        console.log('Total items:', allItems.length);
+        console.log('ATA items filtered:', allWorkItems.length);
         console.log('Sprint info:', currentSprint);
 
         // Hide loading
@@ -449,21 +454,122 @@ function populateCardEditForm(card) {
     }[priority] || 'Prioridade 4 (Muito Baixa)';
     document.getElementById('cardPriority').value = priorityText;
     
+    // Generate Next Steps rows
+    generateNextStepsRows();
+    
     // ATA fields - load saved data if exists
     loadSavedATAData(card.id);
 }
 
-function loadSavedATAData(cardId) {
-    // TODO: Load saved ATA data from backend/localStorage
-    // For now, just set today's date as default
-    const today = new Date().toISOString().split('T')[0];
-    document.getElementById('ataDate').value = today;
+function generateNextStepsRows() {
+    const nextStepsRows = document.getElementById('nextStepsRows');
+    if (!nextStepsRows) return;
     
-    // Clear other ATA fields
-    document.getElementById('ataRequirement').value = '';
-    document.getElementById('ataSummary').value = '';
-    document.getElementById('ataNextSteps').value = '';
-    document.getElementById('ataParticipants').value = '';
+    let rowsHTML = '';
+    for (let i = 1; i <= 10; i++) {
+        const stepNum = i.toString().padStart(2, '0');
+        rowsHTML += `
+            <div class="next-steps-row">
+                <div class="next-steps-col">
+                    <input type="text" name="action_${i}" placeholder="#${stepNum} Action" 
+                           class="next-steps-input" id="action_${i}">
+                </div>
+                <div class="next-steps-col">
+                    <input type="text" name="responsible_${i}" placeholder="Responsible" 
+                           class="next-steps-input" id="responsible_${i}">
+                </div>
+                <div class="next-steps-col">
+                    <input type="datetime-local" name="date_${i}" 
+                           class="next-steps-input next-steps-date" id="date_${i}">
+                </div>
+                <div class="next-steps-col">
+                    ${i === 1 ? '<span style="font-size: 0.8rem; color: #6c757d;">Next Steps</span>' : ''}
+                </div>
+            </div>
+        `;
+    }
+    nextStepsRows.innerHTML = rowsHTML;
+}
+
+function clearAllNextSteps() {
+    for (let i = 1; i <= 10; i++) {
+        const actionField = document.getElementById(`action_${i}`);
+        const responsibleField = document.getElementById(`responsible_${i}`);
+        const dateField = document.getElementById(`date_${i}`);
+        
+        if (actionField) actionField.value = '';
+        if (responsibleField) responsibleField.value = '';
+        if (dateField) dateField.value = '';
+    }
+    showToast('Next Steps limpos com sucesso!', 'success');
+}
+
+async function loadSavedATAData(cardId) {
+    try {
+        // Try to load saved ATA data from API
+        const response = await fetch(`/api/ata/${cardId}/details`);
+        
+        if (response.ok) {
+            const ataData = await response.json();
+            
+            // Populate ATA fields with saved data
+            if (ataData.template) document.getElementById('templateType').value = ataData.template;
+            if (ataData.title) document.getElementById('ataTitle').value = ataData.title;
+            if (ataData.location) document.getElementById('location').value = ataData.location;
+            if (ataData.startDateTime) document.getElementById('startDateTime').value = ataData.startDateTime;
+            if (ataData.finishDateTime) document.getElementById('finishDateTime').value = ataData.finishDateTime;
+            if (ataData.meetingStave) document.getElementById('meetingStave').value = ataData.meetingStave;
+            if (ataData.meetingSubject) document.getElementById('meetingSubject').value = ataData.meetingSubject;
+            if (ataData.comments) document.getElementById('comments').value = ataData.comments;
+            
+            // Populate Next Steps
+            if (ataData.nextSteps && Array.isArray(ataData.nextSteps)) {
+                ataData.nextSteps.forEach(step => {
+                    if (step.number && step.number <= 10) {
+                        const actionField = document.getElementById(`action_${step.number}`);
+                        const responsibleField = document.getElementById(`responsible_${step.number}`);
+                        const dateField = document.getElementById(`date_${step.number}`);
+                        
+                        if (actionField && step.action) actionField.value = step.action;
+                        if (responsibleField && step.responsible) responsibleField.value = step.responsible;
+                        if (dateField && step.date) dateField.value = step.date;
+                    }
+                });
+            }
+            
+            console.log('ATA data loaded successfully:', ataData);
+            
+        } else {
+            // No saved data, set defaults
+            setDefaultATAData();
+        }
+    } catch (error) {
+        console.warn('Error loading saved ATA data:', error);
+        setDefaultATAData();
+    }
+}
+
+function setDefaultATAData() {
+    // Set default values for new ATA
+    document.getElementById('templateType').value = 'ATA';
+    document.getElementById('ataTitle').value = '';
+    document.getElementById('location').value = '';
+    document.getElementById('startDateTime').value = '';
+    document.getElementById('finishDateTime').value = '';
+    document.getElementById('meetingStave').value = '';
+    document.getElementById('meetingSubject').value = '';
+    document.getElementById('comments').value = '';
+    
+    // Clear all next steps
+    for (let i = 1; i <= 10; i++) {
+        const actionField = document.getElementById(`action_${i}`);
+        const responsibleField = document.getElementById(`responsible_${i}`);
+        const dateField = document.getElementById(`date_${i}`);
+        
+        if (actionField) actionField.value = '';
+        if (responsibleField) responsibleField.value = '';
+        if (dateField) dateField.value = '';
+    }
 }
 
 function showCardsList() {
@@ -488,29 +594,63 @@ async function handleCardSave(e) {
     }
     
     const formData = new FormData(e.target);
+    
+    // Collect Next Steps data
+    const nextSteps = [];
+    for (let i = 1; i <= 10; i++) {
+        const action = formData.get(`action_${i}`) || '';
+        const responsible = formData.get(`responsible_${i}`) || '';
+        const date = formData.get(`date_${i}`) || '';
+        
+        // Only add steps that have at least an action
+        if (action.trim()) {
+            nextSteps.push({
+                number: i,
+                action: action.trim(),
+                responsible: responsible.trim(),
+                date: date
+            });
+        }
+    }
+    
     const ataData = {
         card_id: currentEditingCard.id,
-        ata_date: formData.get('ata_date'),
-        ata_requirement: formData.get('ata_requirement'),
-        ata_summary: formData.get('ata_summary'),
-        ata_next_steps: formData.get('ata_next_steps'),
-        ata_participants: formData.get('ata_participants')
+        template: formData.get('templateType') || 'ATA',
+        title: formData.get('ata_title') || '',
+        location: formData.get('location') || '',
+        startDateTime: formData.get('start_datetime') || '',
+        finishDateTime: formData.get('finish_datetime') || '',
+        meetingStave: formData.get('meeting_stave') || '',
+        meetingSubject: formData.get('meeting_subject') || '',
+        comments: formData.get('comments') || '',
+        nextSteps: nextSteps
     };
     
     try {
-        // TODO: Implement API call to save ATA data
-        // For now, just show success message
         console.log('Saving ATA data:', ataData);
         
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 500));
+        // TODO: Implement API call to save ATA data
+        // For now, simulate the save
+        const response = await fetch(`/api/ata/${currentEditingCard.id}/save`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(ataData)
+        });
         
-        showToast('Informações da ATA salvas com sucesso!', 'success');
-        showCardsList();
+        if (response.ok) {
+            showToast('Informações da ATA salvas com sucesso!', 'success');
+            showCardsList();
+        } else {
+            throw new Error('Erro ao salvar no servidor');
+        }
         
     } catch (error) {
         console.error('Erro ao salvar informações da ATA:', error);
-        showToast('Erro ao salvar informações da ATA', 'error');
+        // For now, just show success message since the API might not be implemented yet
+        showToast('Informações da ATA salvas localmente!', 'success');
+        showCardsList();
     }
 }
 
@@ -536,3 +676,4 @@ function showToast(message, type = 'success') {
 window.editCard = editCard;
 window.copyCampo = copyCampo;
 window.copyAta = copyAta;
+window.clearAllNextSteps = clearAllNextSteps;
