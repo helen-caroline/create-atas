@@ -76,6 +76,107 @@ class AzureBoardsController:
         
         return None
     
+    def get_all_sprints(self):
+        """Busca todas as sprints do time ordenadas por data"""
+        try:
+            # URL para buscar todas as sprints do time
+            api_url = f"https://dev.azure.com/{self.org}/{self.project}/{self.team}/_apis/work/teamsettings/iterations"
+            params = {
+                "api-version": "7.0"
+            }
+            
+            response = requests.get(api_url, headers=self.headers, params=params)
+            
+            if response.status_code == 200:
+                data = response.json()
+                iterations = data.get("value", [])
+                
+                # Ordenar por data de início (mais recente primeiro)
+                sorted_iterations = sorted(iterations, 
+                    key=lambda x: x.get("attributes", {}).get("startDate", ""), 
+                    reverse=True)
+                
+                return sorted_iterations
+                    
+            else:
+                raise Exception(f"Erro ao buscar sprints: {response.status_code} - {response.text}")
+                
+        except Exception as e:
+            raise Exception(f"Erro ao buscar todas as sprints: {str(e)}")
+        
+        return []
+    
+    def get_last_three_sprints(self):
+        """Busca as últimas 3 sprints (atual + 2 anteriores)"""
+        try:
+            all_sprints = self.get_all_sprints()
+            current_sprint = self.get_current_sprint()
+            
+            if not current_sprint:
+                # Se não há sprint atual, pegar as 3 mais recentes
+                result_sprints = []
+                for i, sprint in enumerate(all_sprints[:3]):
+                    sprint_info = {
+                        "id": sprint.get("id"),
+                        "name": sprint.get("name"),
+                        "path": sprint.get("path"),
+                        "startDate": sprint.get("attributes", {}).get("startDate"),
+                        "endDate": sprint.get("attributes", {}).get("finishDate"),
+                        "isCurrent": i == 0
+                    }
+                    result_sprints.append(sprint_info)
+                return result_sprints
+            
+            # Identificar a sprint atual
+            current_sprint_id = current_sprint.get("id")
+            current_start_date = current_sprint.get("attributes", {}).get("startDate")
+            
+            result_sprints = []
+            
+            # Adicionar a sprint atual primeiro
+            current_sprint_info = {
+                "id": current_sprint.get("id"),
+                "name": current_sprint.get("name"),
+                "path": current_sprint.get("path"),
+                "startDate": current_start_date,
+                "endDate": current_sprint.get("attributes", {}).get("finishDate"),
+                "isCurrent": True
+            }
+            result_sprints.append(current_sprint_info)
+            
+            # Buscar sprints anteriores à atual (com data de início menor)
+            previous_sprints = []
+            for sprint in all_sprints:
+                if sprint.get("id") == current_sprint_id:
+                    continue  # Pular a sprint atual
+                
+                sprint_start_date = sprint.get("attributes", {}).get("startDate")
+                if sprint_start_date and current_start_date and sprint_start_date < current_start_date:
+                    previous_sprints.append(sprint)
+            
+            # Ordenar sprints anteriores por data (mais recente primeiro)
+            previous_sprints_sorted = sorted(previous_sprints, 
+                key=lambda x: x.get("attributes", {}).get("startDate", ""), 
+                reverse=True)
+            
+            # Adicionar as 2 sprints anteriores mais recentes
+            for sprint in previous_sprints_sorted[:2]:
+                sprint_info = {
+                    "id": sprint.get("id"),
+                    "name": sprint.get("name"),
+                    "path": sprint.get("path"),
+                    "startDate": sprint.get("attributes", {}).get("startDate"),
+                    "endDate": sprint.get("attributes", {}).get("finishDate"),
+                    "isCurrent": False
+                }
+                result_sprints.append(sprint_info)
+            
+            return result_sprints
+                
+        except Exception as e:
+            print(f"Erro ao buscar últimas 3 sprints: {str(e)}")
+            return []
+
     def get_my_work_items_in_sprint(self, sprint_id=None):
         """Busca work items (cards) atribuídos ao usuário na sprint ativa usando WIQL"""
         try:

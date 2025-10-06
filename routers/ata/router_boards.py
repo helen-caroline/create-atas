@@ -13,13 +13,48 @@ def get_my_cards():
     except Exception as e:
         return jsonify({"error": str(e), "work_items": []}), 500
 
+@boards_bp.route("/api/boards/sprints", methods=["GET"])
+def get_sprints():
+    """Busca as últimas 3 sprints (atual + 2 anteriores)"""
+    try:
+        boards_controller = AzureBoardsController()
+        sprints = boards_controller.get_last_three_sprints()
+        return jsonify({"sprints": sprints})
+    except Exception as e:
+        return jsonify({"error": str(e), "sprints": []}), 500
+
 @boards_bp.route("/api/boards/my-work-items", methods=["GET"])
 def get_my_work_items():
     """Busca os work items (cards) do usuário na sprint ativa - rota alternativa"""
     try:
+        # Verificar se foi passado um sprint_id específico
+        sprint_id = request.args.get('sprint_id')
+        
         boards_controller = AzureBoardsController()
-        result = boards_controller.get_sprint_and_work_items()
-        return jsonify(result)
+        
+        if sprint_id:
+            # Buscar work items de uma sprint específica
+            work_items = boards_controller.get_my_work_items_in_sprint(sprint_id)
+            # Buscar informações da sprint específica
+            all_sprints = boards_controller.get_all_sprints()
+            selected_sprint = next((s for s in all_sprints if s.get("id") == sprint_id), None)
+            
+            return jsonify({
+                "sprint": {
+                    "id": selected_sprint.get("id") if selected_sprint else sprint_id,
+                    "name": selected_sprint.get("name") if selected_sprint else f"Sprint {sprint_id}",
+                    "path": selected_sprint.get("path") if selected_sprint else "",
+                    "startDate": selected_sprint.get("attributes", {}).get("startDate") if selected_sprint else "",
+                    "endDate": selected_sprint.get("attributes", {}).get("finishDate") if selected_sprint else ""
+                },
+                "work_items": work_items,
+                "total_items": len(work_items),
+                "message": f"Encontrados {len(work_items)} work items na sprint selecionada"
+            })
+        else:
+            # Comportamento padrão - sprint atual
+            result = boards_controller.get_sprint_and_work_items()
+            return jsonify(result)
     except Exception as e:
         return jsonify({"error": str(e), "work_items": []}), 500
 

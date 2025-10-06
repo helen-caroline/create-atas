@@ -132,6 +132,13 @@ function setupCardsEventListeners() {
     if (statusFilter) statusFilter.addEventListener('change', filterCards);
     if (priorityFilter) priorityFilter.addEventListener('change', filterCards);
     
+    // Sprint selector
+    const sprintSelector = document.getElementById('sprintSelector');
+    if (sprintSelector) {
+        sprintSelector.addEventListener('change', handleSprintChange);
+        loadSprints(); // Load available sprints
+    }
+    
     // Back to list button
     const backToListBtn = document.getElementById('backToListBtn');
     if (backToListBtn) {
@@ -148,6 +155,149 @@ function setupCardsEventListeners() {
     const cardEditForm = document.getElementById('cardEditForm');
     if (cardEditForm) {
         cardEditForm.addEventListener('submit', handleCardSave);
+    }
+}
+
+async function loadSprints() {
+    const sprintSelector = document.getElementById('sprintSelector');
+    if (!sprintSelector) return;
+    
+    try {
+        const response = await fetch('/api/boards/sprints');
+        const data = await response.json();
+        
+        if (data.error) {
+            throw new Error(data.error);
+        }
+        
+        const sprints = data.sprints || [];
+        
+        // Clear existing options
+        sprintSelector.innerHTML = '';
+        
+        // Add sprint options
+        sprints.forEach(sprint => {
+            const option = document.createElement('option');
+            option.value = sprint.id;
+            option.textContent = sprint.isCurrent ? 
+                `📅 ${sprint.name} (CURRENT)` : 
+                `📋 ${sprint.name}`;
+            
+            if (sprint.isCurrent) {
+                option.selected = true;
+                option.setAttribute('data-current', 'true');
+            }
+            
+            sprintSelector.appendChild(option);
+        });
+        
+        console.log('Loaded sprints:', sprints);
+        
+    } catch (error) {
+        console.error('Error loading sprints:', error);
+        sprintSelector.innerHTML = '<option value="">Erro ao carregar sprints</option>';
+        showToast('Erro ao carregar sprints', 'error');
+    }
+}
+
+async function handleSprintChange(event) {
+    const selectedSprintId = event.target.value;
+    
+    if (!selectedSprintId) return;
+    
+    try {
+        showToast('Carregando ATAs da sprint...', 'info');
+        
+        // Update current sprint info globally
+        currentSprint = { id: selectedSprintId };
+        
+        // Load work items for the selected sprint
+        await loadWorkItemsForSprint(selectedSprintId);
+        
+    } catch (error) {
+        console.error('Error changing sprint:', error);
+        showToast('Erro ao carregar sprint', 'error');
+    }
+}
+
+async function loadWorkItemsForSprint(sprintId) {
+    const loadingElement = document.getElementById('loadingCards');
+    const cardsContainer = document.getElementById('cardsContainer');
+    const noCardsMessage = document.getElementById('noCardsMessage');
+    const errorMessage = document.getElementById('errorMessage');
+    const sprintInfo = document.getElementById('sprintInfo');
+
+    try {
+        // Show loading state
+        if (loadingElement) loadingElement.style.display = 'block';
+        if (noCardsMessage) noCardsMessage.style.display = 'none';
+        if (errorMessage) errorMessage.style.display = 'none';
+        if (sprintInfo) sprintInfo.style.display = 'none';
+
+        const response = await fetch(`/api/boards/my-work-items?sprint_id=${sprintId}`);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const responseText = await response.text();
+        let data;
+        
+        try {
+            data = JSON.parse(responseText);
+        } catch (parseError) {
+            console.error('Response is not valid JSON:', responseText);
+            throw new Error('Resposta da API não é um JSON válido. Verifique o servidor.');
+        }
+
+        if (data.error) {
+            throw new Error(data.error);
+        }
+
+        // Store data globally with validation - filter only ATAs
+        const allItems = Array.isArray(data.work_items) ? data.work_items : [];
+        allWorkItems = allItems.filter(item => {
+            const workItemType = item.fields['System.WorkItemType'] || '';
+            return workItemType.toLowerCase() === 'ata';
+        });
+        currentSprint = data.sprint || null;
+
+        console.log('Sprint API response:', data);
+        console.log('Total items:', allItems.length);
+        console.log('ATA items filtered:', allWorkItems.length);
+        console.log('Sprint info:', currentSprint);
+
+        // Hide loading
+        if (loadingElement) loadingElement.style.display = 'none';
+
+        // Display results
+        if (allWorkItems.length > 0) {
+            displayWorkItems(allWorkItems);
+            updateCardsCount(allWorkItems.length, allWorkItems.length);
+            displaySprintInfo(currentSprint);
+        } else {
+            if (noCardsMessage) noCardsMessage.style.display = 'block';
+            updateCardsCount(0, 0);
+        }
+        
+        showToast(`Carregadas ${allWorkItems.length} ATAs da sprint`, 'success');
+
+    } catch (error) {
+        console.error('Error loading work items for sprint:', error);
+        
+        // Hide loading
+        if (loadingElement) loadingElement.style.display = 'none';
+        
+        // Show error
+        if (errorMessage) {
+            const errorText = document.getElementById('errorText');
+            if (errorText) errorText.textContent = `Erro: ${error.message}`;
+            errorMessage.style.display = 'block';
+        }
+        
+        showToast('Erro ao carregar work items', 'error');
+        allWorkItems = [];
+        updateCardsCount(0, 0);
     }
 }
 
