@@ -26,3 +26,14 @@ def manage_cards():
     """Página para gerenciar cards"""
     data = PagesController.manage_cards()
     return render_template("manage_cards.html", **data)
+
+@pages_bp.route("/ata-workspace")
+def ata_workspace():
+    """Página unificada do ATA Workspace - combina gerador de ATAs e manage cards"""
+    data = PagesController.ata_workspace()
+    return render_template("ata_workspace.html", **data)
+
+@pages_bp.route("/test-cards")
+def test_cards():
+    """Página de teste para cards"""
+    return render_template("test_cards.html")

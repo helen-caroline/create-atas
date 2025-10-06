@@ -21,3 +21,9 @@ class PagesController:
     def manage_cards():
         """Lógica da página de gerenciamento de cards"""
         return {}
+
+    @staticmethod
+    def ata_workspace():
+        """Lógica da página unificada do ATA Workspace"""
+        hoje = datetime.now().strftime("%Y-%m-%d")  # Format for HTML date input
+        return {"hoje": hoje}

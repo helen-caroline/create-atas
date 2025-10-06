@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>ATA Workspace - Create ATAs</title>
+    <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/static/dashboard.css">
+    <link rel="stylesheet" href="/static/ata_workspace.css">
+</head>
+<body>
+    <div class="app-wrapper">
+        <!-- Sidebar -->
+        <nav class="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo">
+                    <i class="fas fa-file-text"></i>
+                    <h2>Create ATAs</h2>
+                </div>
+                <button class="sidebar-toggle" id="sidebarToggle">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </div>
+            
+            <ul class="sidebar-menu">
+                <li class="menu-item">
+                    <a href="/" class="menu-link">
+                        <i class="fas fa-home"></i>
+                        <span>Dashboard</span>
+                    </a>
+                </li>
+                <li class="menu-item">
+                    <a href="/atas" class="menu-link">
+                        <i class="fas fa-file-alt"></i>
+                        <span>Gerador de ATAs</span>
+                    </a>
+                </li>
+                <li class="menu-item">
+                    <a href="/pipeline" class="menu-link">
+                        <i class="fas fa-cogs"></i>
+                        <span>Pipeline Cards</span>
+                    </a>
+                </li>
+                <li class="menu-item">
+                    <a href="/manage-cards" class="menu-link">
+                        <i class="fas fa-tasks"></i>
+                        <span>Manage Cards</span>
+                    </a>
+                </li>
+                <li class="menu-item active">
+                    <a href="/ata-workspace" class="menu-link">
+                        <i class="fas fa-layer-group"></i>
+                        <span>ATA Workspace</span>
+                    </a>
+                </li>
+            </ul>
+            
+            <div class="sidebar-footer">
+                <div class="user-info">
+                    <i class="fas fa-user-circle"></i>
+                    <span>Admin</span>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Header -->
+            <header class="main-header">
+                <div class="header-left">
+                    <button class="mobile-menu-toggle" id="mobileMenuToggle">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <h1>ATA Workspace</h1>
+                </div>
+                <div class="header-right">
+                    <div class="date-info">
+                        <i class="fas fa-calendar"></i>
+                        <span id="currentDate"></span>
+                    </div>
+                </div>
+            </header>
+
+            <!-- ATA Workspace Content -->
+            <div class="workspace-container">
+                <!-- Left Panel - ATA Generator -->
+                <div class="left-panel">
+                    <div class="panel-header">
+                        <h2><i class="fas fa-file-alt"></i> Gerador de ATAs</h2>
+                    </div>
+                    
+                    <div class="ata-generator">
+                        <!-- ATA Form -->
+                        <div class="form-card">
+                            <h3>☀️ Resumo do Dia</h3>
+                            <form id="ataForm">
+                                <label for="data">Data</label>
+                                <input type="date" id="data" name="data" value="{{ hoje }}" required>
+
+                                <label for="requerimento">Número do Requerimento</label>
+                                <input type="text" id="requerimento" name="requerimento" required>
+
+                                <label for="titulo_issue">Título da Issue (para o nome do arquivo)</label>
+                                <input type="text" id="titulo_issue" name="titulo_issue" placeholder="[ECAD] Construção do fluxo Audiovisual">
+
+                                <label for="resumo">Resumo do Usuário</label>
+                                <textarea id="resumo" name="resumo" rows="8" required></textarea>
+
+                                <button type="submit">Gerar ATA</button>
+                            </form>
+                            <div id="ataError" class="small-note" style="display:none;margin-top:8px;color:#ff6b6b"></div>
+                        </div>
+
+                        <!-- ATA Result -->
+                        <div class="ata-result-section">
+                            <!-- Placeholder quando não há resultado -->
+                            <div id="resultPlaceholder" class="result-placeholder">
+                                <i class="fas fa-file-alt"></i>
+                                <h3>Sua ATA aparecerá aqui</h3>
+                                <p>Preencha o formulário acima e clique em "Gerar ATA" para ver o resultado</p>
+                            </div>
+                            
+                            <!-- Resultado da ATA -->
+                            <div id="ataResult" style="display:none;">
+                                <div class="ata-box ata-content">
+                                    <div class="nome-row" style="margin-bottom:8px">
+                                        <div>
+                                            <label class="muted">Nome do arquivo:</label>
+                                            <div style="display:flex;align-items:center;gap:8px;margin-top:6px;">
+                                                <div class="nome" id="nomeArquivo"></div>
+                                                <button class="copy-btn" onclick="copyCampo('nomeArquivo')" title="Copiar nome do arquivo"><i class="fa fa-copy"></i></button>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Título da ATA (oculto, usado pelo JS) -->
+                                    <div style="display:none;">
+                                        <div id="tituloAta"></div>
+                                        <div id="proximosPassos"></div>
+                                    </div>
+
+                                    <div style="height:8px"></div>
+                                    <label class="muted">ATA completa:</label>
+                                    <div style="position:relative;margin-top:6px;display:flex;flex-direction:column;gap:8px;flex:1;min-height:0;">
+                                        <button class="copy-btn" style="position:absolute;top:18px;right:28px;z-index:2;" onclick="copyAta()" title="Copiar ATA completa"><i class="fa fa-copy"></i></button>
+                                        <pre id="ataText" class="ata-pre"></pre>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Panel - Cards Management -->
+                <div class="right-panel">
+                    <!-- Cards List View -->
+                    <div id="cardsListView" class="cards-list-view">
+                        <div class="panel-header">
+                            <h2><i class="fas fa-tasks"></i> Meus Cards</h2>
+                            <div class="cards-count" id="cardsCount">
+                                <span id="visibleCount">0</span> de <span id="totalCount">0</span> cards
+                            </div>
+                        </div>
+
+                        <!-- Sprint Info -->
+                        <div class="sprint-info-compact" id="sprintInfo" style="display: none;">
+                            <div class="sprint-icon">
+                                <i class="fas fa-clock"></i>
+                            </div>
+                            <div class="sprint-details" id="sprintDetails">
+                                <!-- Sprint details will be populated here -->
+                            </div>
+                        </div>
+
+                        <!-- Filters Section -->
+                        <div class="filters-section">
+                            <div class="search-box">
+                                <i class="fas fa-search"></i>
+                                <input type="text" id="searchCards" placeholder="Buscar cards...">
+                            </div>
+                            
+                            <div class="filter-row">
+                                <div class="filter-group">
+                                    <label>Status:</label>
+                                    <select id="statusFilter">
+                                        <option value="">Todos</option>
+                                        <option value="new">New</option>
+                                        <option value="active">Active</option>
+                                        <option value="resolved">Resolved</option>
+                                        <option value="closed">Closed</option>
+                                        <option value="proposed">Proposed</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="filter-group">
+                                    <label>Prioridade:</label>
+                                    <select id="priorityFilter">
+                                        <option value="">Todas</option>
+                                        <option value="1">Alta</option>
+                                        <option value="2">Média</option>
+                                        <option value="3">Baixa</option>
+                                        <option value="4">Muito Baixa</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Cards Container -->
+                        <div class="cards-grid" id="cardsContainer">
+                            <!-- Loading state -->
+                            <div class="loading-cards" id="loadingCards">
+                                <i class="fas fa-spinner fa-spin"></i>
+                                <p>Carregando cards...</p>
+                            </div>
+                        </div>
+
+                        <!-- No cards message -->
+                        <div class="no-cards-message" id="noCardsMessage" style="display: none;">
+                            <i class="fas fa-inbox"></i>
+                            <p>Nenhum card encontrado</p>
+                            <small>Verifique se você tem work items atribuídos na sprint atual</small>
+                        </div>
+
+                        <!-- Error message -->
+                        <div class="error-message" id="errorMessage" style="display: none;">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <p id="errorText">Erro ao carregar cards</p>
+                        </div>
+                    </div>
+
+                    <!-- Card Edit View -->
+                    <div id="cardEditView" class="card-edit-view" style="display: none;">
+                        <div class="panel-header">
+                            <button class="back-btn" id="backToListBtn">
+                                <i class="fas fa-arrow-left"></i> Voltar para lista
+                            </button>
+                            <h2><i class="fas fa-edit"></i> Editar Card</h2>
+                        </div>
+
+                        <div class="card-edit-form">
+                            <div class="card-info-header" id="cardInfoHeader">
+                                <!-- Card basic info will be populated here -->
+                            </div>
+
+                            <form id="cardEditForm">
+                                <div class="form-group">
+                                    <label for="cardTitle">Título do Card</label>
+                                    <input type="text" id="cardTitle" name="title" readonly>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="cardDescription">Descrição</label>
+                                    <textarea id="cardDescription" name="description" rows="4" readonly></textarea>
+                                </div>
+
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="cardStatus">Status</label>
+                                        <input type="text" id="cardStatus" name="status" readonly>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="cardPriority">Prioridade</label>
+                                        <input type="text" id="cardPriority" name="priority" readonly>
+                                    </div>
+                                </div>
+
+                                <!-- ATA Fields -->
+                                <div class="ata-fields-section">
+                                    <h3><i class="fas fa-clipboard-list"></i> Informações da ATA</h3>
+                                    
+                                    <div class="form-group">
+                                        <label for="ataDate">Data da ATA</label>
+                                        <input type="date" id="ataDate" name="ata_date">
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="ataRequirement">Número do Requerimento</label>
+                                        <input type="text" id="ataRequirement" name="ata_requirement" placeholder="Ex: REQ-2024-001">
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="ataSummary">Resumo da ATA</label>
+                                        <textarea id="ataSummary" name="ata_summary" rows="6" placeholder="Descreva o que foi discutido e decidido..."></textarea>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="ataNextSteps">Próximos Passos</label>
+                                        <textarea id="ataNextSteps" name="ata_next_steps" rows="4" placeholder="Liste os próximos passos e responsáveis..."></textarea>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="ataParticipants">Participantes</label>
+                                        <input type="text" id="ataParticipants" name="ata_participants" placeholder="Lista de participantes separados por vírgula">
+                                    </div>
+                                </div>
+
+                                <div class="form-actions">
+                                    <button type="button" class="btn-secondary" id="cancelEditBtn">Cancelar</button>
+                                    <button type="submit" class="btn-primary">Salvar Informações</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="/static/dashboard.js"></script>
+    <script src="/static/ata.js"></script>
+    <script src="/static/ata_workspace.js"></script>
+    <!-- toast notification -->
+    <div id="toast" aria-live="polite" aria-atomic="true" style="display:none"></div>
+</body>
+</html>

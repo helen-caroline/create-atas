@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Cards</title>
+</head>
+<body>
+    <h1>Test Cards API</h1>
+    <div id="result"></div>
+    
+    <script>
+        async function testAPI() {
+            try {
+                console.log('Fetching data...');
+                const response = await fetch('/api/boards/my-work-items');
+                console.log('Response:', response);
+                
+                const data = await response.json();
+                console.log('Data:', data);
+                
+                document.getElementById('result').innerHTML = `
+                    <p>Found ${data.work_items ? data.work_items.length : 0} work items</p>
+                    <p>Sprint: ${data.sprint ? data.sprint.name : 'None'}</p>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                `;
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('result').innerHTML = `Error: ${error.message}`;
+            }
+        }
+        
+        testAPI();
+    </script>
+</body>
+</html>
