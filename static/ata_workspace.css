@@ -592,6 +592,14 @@
     box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
+/* Campo Comments - Maior altura e redimensionável */
+#comments {
+    min-height: 200px !important;
+    resize: vertical;
+    line-height: 1.6;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+}
+
 /* Status select specific styling */
 .form-group select#cardStatus {
     background: white;
