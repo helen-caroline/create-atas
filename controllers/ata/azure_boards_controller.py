@@ -537,8 +537,9 @@ class AzureBoardsController:
                 })
             
             if "comments" in ata_data and ata_data["comments"]:
-                # Envolver em div para manter consistência com o formato
-                comments_html = f"<div>{ata_data['comments']}</div>"
+                # Preservar quebras de linha convertendo \n para <br> e depois envolvendo em div
+                comments_with_breaks = ata_data['comments'].replace('\n', '<br>\n')
+                comments_html = f"<div>{comments_with_breaks}</div>"
                 updates.append({
                     "op": "replace",
                     "path": "/fields/Custom.MeetingComments1",
