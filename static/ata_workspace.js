@@ -23,13 +23,72 @@ document.addEventListener('DOMContentLoaded', function() {
 
 function initializeATAGenerator() {
     const ataForm = document.getElementById('ataForm');
+    console.log('DEBUG: initializeATAGenerator called, form found:', !!ataForm);
     if (ataForm) {
         ataForm.addEventListener('submit', handleATASubmit);
+        console.log('DEBUG: Event listener added to form');
     }
+}
+
+// Funções auxiliares para pop-up e loading (movidas para cima)
+function showGerandoAtaPopup() {
+    console.log('DEBUG: showGerandoAtaPopup called');
+    const popup = document.getElementById('gerandoAtaPopup');
+    if (popup) {
+        popup.style.display = 'flex';
+        console.log('DEBUG: Popup shown');
+    } else {
+        console.log('DEBUG: Popup element not found');
+    }
+}
+
+function hideGerandoAtaPopup() {
+    console.log('DEBUG: hideGerandoAtaPopup called');
+    const popup = document.getElementById('gerandoAtaPopup');
+    if (popup) {
+        popup.style.display = 'none';
+        console.log('DEBUG: Popup hidden');
+    }
+}
+
+function showResultLoading() {
+    console.log('DEBUG: showResultLoading called');
+    const resultPlaceholder = document.getElementById('resultPlaceholder');
+    const resultLoading = document.getElementById('resultLoading');
+    const ataResult = document.getElementById('ataResult');
+    
+    if (resultPlaceholder) resultPlaceholder.style.display = 'none';
+    if (ataResult) ataResult.style.display = 'none';
+    if (resultLoading) {
+        resultLoading.style.display = 'flex';
+        console.log('DEBUG: Loading shown');
+    } else {
+        console.log('DEBUG: Loading element not found');
+    }
+}
+
+function hideResultLoading() {
+    console.log('DEBUG: hideResultLoading called');
+    const resultLoading = document.getElementById('resultLoading');
+    const resultPlaceholder = document.getElementById('resultPlaceholder');
+    
+    if (resultLoading) resultLoading.style.display = 'none';
+    if (resultPlaceholder) resultPlaceholder.style.display = 'flex';
 }
 
 async function handleATASubmit(e) {
     e.preventDefault();
+    console.log('DEBUG: handleATASubmit called - TESTE FUNCIONANDO!');
+    
+    // Mostrar pop-up imediatamente
+    showGerandoAtaPopup();
+    showResultLoading();
+    
+    // Simular delay de 4 segundos
+    setTimeout(() => {
+        hideGerandoAtaPopup();
+        console.log('DEBUG: Pop-up escondido após 4 segundos');
+    }, 4000);
     
     const form = e.target;
     const formData = new FormData(form);
@@ -37,6 +96,8 @@ async function handleATASubmit(e) {
     
     try {
         ataError.style.display = 'none';
+        
+        console.log('DEBUG: About to send request');
         
         const response = await fetch('/gerar_ata', {
             method: 'POST',
@@ -54,11 +115,17 @@ async function handleATASubmit(e) {
         }
         
         console.log('DEBUG: ATA Response data:', data);
-        displayATAResult(data);
-        showToast('ATA gerada com sucesso!', 'success');
+        
+        // Aguardar até o pop-up terminar para mostrar resultado
+        setTimeout(() => {
+            displayATAResult(data);
+            showToast('ATA gerada com sucesso!', 'success');
+        }, 4000);
         
     } catch (error) {
         console.error('Erro ao gerar ATA:', error);
+        hideGerandoAtaPopup();
+        hideResultLoading();
         ataError.textContent = `Erro: ${error.message}`;
         ataError.style.display = 'block';
         showToast('Erro ao gerar ATA', 'error');
@@ -67,6 +134,7 @@ async function handleATASubmit(e) {
 
 function displayATAResult(data) {
     const resultPlaceholder = document.getElementById('resultPlaceholder');
+    const resultLoading = document.getElementById('resultLoading');
     const ataResult = document.getElementById('ataResult');
     const nomeArquivo = document.getElementById('nomeArquivo');
     const ataText = document.getElementById('ataText');
@@ -75,8 +143,9 @@ function displayATAResult(data) {
     
     console.log('DEBUG: displayATAResult called with:', data);
     
-    // Hide placeholder and show result
+    // Hide placeholder and loading, show result
     if (resultPlaceholder) resultPlaceholder.style.display = 'none';
+    if (resultLoading) resultLoading.style.display = 'none';
     if (ataResult) ataResult.style.display = 'block';
     
     // Generate filename based on title and date
@@ -1135,5 +1204,6 @@ function showToast(message, type = 'success') {
 // Make functions globally available
 window.editCard = editCard;
 window.copyCampo = copyCampo;
+window.copyAta = copyAta;
 window.copyAta = copyAta;
 window.clearAllNextSteps = clearAllNextSteps;

@@ -2,6 +2,12 @@
    ATA WORKSPACE - CSS STYLES
    ============================================ */
 
+/* Animação para a barra de progresso do pop-up */
+@keyframes progressBar {
+    from { width: 0%; }
+    to { width: 100%; }
+}
+
 /* Override header to be more compact */
 .main-header {
     padding: 0.5rem 1.5rem !important; /* Much more compact header */

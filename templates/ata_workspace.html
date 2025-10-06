@@ -112,7 +112,7 @@
                         
                         <!-- Button outside scroll area -->
                         <div class="form-button-container">
-                            <button type="submit" form="ataForm" class="generate-ata-btn">Gerar ATA</button>
+                            <button type="submit" form="ataForm" class="generate-ata-btn" onclick="console.log('Botão clicado!')">Gerar ATA</button>
                         </div>
 
                         <!-- ATA Result -->
@@ -122,6 +122,13 @@
                                 <i class="fas fa-file-alt"></i>
                                 <h3>Sua ATA aparecerá aqui</h3>
                                 <p>Preencha o formulário acima e clique em "Gerar ATA" para ver o resultado</p>
+                            </div>
+                            
+                            <!-- Estado de carregamento -->
+                            <div id="resultLoading" style="display:none; flex-direction:column; align-items:center; justify-content:center; padding:40px 20px; text-align:center; background:#f8f9fa; border-radius:8px; margin:15px; border:2px dashed #dee2e6;">
+                                <i class="fas fa-spinner fa-spin" style="font-size:36px; color:#667eea; margin-bottom:15px;"></i>
+                                <h3 style="margin:0 0 5px 0; color:#333; font-size:18px;">Carregando...</h3>
+                                <p style="margin:0; color:#666; font-size:14px;">Gerando sua ATA, aguarde um momento</p>
                             </div>
                             
                             <!-- Resultado da ATA -->
@@ -375,5 +382,19 @@
     <script src="/static/ata_workspace.js"></script>
     <!-- toast notification -->
     <div id="toast" aria-live="polite" aria-atomic="true" style="display:none"></div>
+    
+    <!-- Pop-up simples para "Gerando ATA" -->
+    <div id="gerandoAtaPopup" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9999; align-items:center; justify-content:center;">
+        <div style="background:white; padding:30px; border-radius:12px; text-align:center; max-width:400px; width:90%;">
+            <div style="font-size:48px; color:#667eea; margin-bottom:20px;">
+                <i class="fas fa-cog fa-spin"></i>
+            </div>
+            <h3 style="margin:0 0 10px 0; color:#333; font-size:24px;">Gerando ATA</h3>
+            <p style="margin:0 0 20px 0; color:#666; font-size:14px;">Aguarde, estamos processando sua solicitação...</p>
+            <div style="width:100%; height:6px; background:#e9ecef; border-radius:3px; overflow:hidden;">
+                <div style="height:100%; background:linear-gradient(90deg, #667eea, #764ba2); border-radius:3px; animation:progressBar 4s ease-in-out;"></div>
+            </div>
+        </div>
+    </div>
 </body>
 </html>
