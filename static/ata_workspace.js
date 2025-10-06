@@ -38,7 +38,7 @@ async function handleATASubmit(e) {
     try {
         ataError.style.display = 'none';
         
-        const response = await fetch('/api/atas/gerar', {
+        const response = await fetch('/gerar_ata', {
             method: 'POST',
             body: formData
         });
@@ -53,6 +53,7 @@ async function handleATASubmit(e) {
             throw new Error(data.error);
         }
         
+        console.log('DEBUG: ATA Response data:', data);
         displayATAResult(data);
         showToast('ATA gerada com sucesso!', 'success');
         
@@ -72,15 +73,23 @@ function displayATAResult(data) {
     const tituloAta = document.getElementById('tituloAta');
     const proximosPassos = document.getElementById('proximosPassos');
     
-    // Hide placeholder and show result
-    resultPlaceholder.style.display = 'none';
-    ataResult.style.display = 'block';
+    console.log('DEBUG: displayATAResult called with:', data);
     
-    // Populate data
-    if (nomeArquivo) nomeArquivo.textContent = data.nome_arquivo || '';
-    if (ataText) ataText.textContent = data.ata_completa || '';
-    if (tituloAta) tituloAta.textContent = data.titulo_ata || '';
-    if (proximosPassos) proximosPassos.textContent = data.proximos_passos || '';
+    // Hide placeholder and show result
+    if (resultPlaceholder) resultPlaceholder.style.display = 'none';
+    if (ataResult) ataResult.style.display = 'block';
+    
+    // Generate filename based on title and date
+    const hoje = new Date().toLocaleDateString('pt-BR').replace(/\//g, '-');
+    const nomeGerado = `ATA_${data.titulo || 'Atividades'}_${hoje}.md`;
+    
+    // Populate data using correct keys from backend
+    if (nomeArquivo) nomeArquivo.textContent = nomeGerado;
+    if (ataText) ataText.textContent = data.ata || ''; // Full ATA content
+    if (tituloAta) tituloAta.textContent = data.titulo || ''; // Extracted title
+    if (proximosPassos) proximosPassos.textContent = data.proximos || ''; // Next steps
+    
+    console.log('DEBUG: ATA result displayed successfully');
 }
 
 function copyCampo(elementId) {
