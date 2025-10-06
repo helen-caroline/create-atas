@@ -537,9 +537,11 @@ class AzureBoardsController:
                 })
             
             if "comments" in ata_data and ata_data["comments"]:
-                # Preservar quebras de linha convertendo \n para <br> e depois envolvendo em div
+                # Preservar quebras de linha convertendo \n para <br>
                 comments_with_breaks = ata_data['comments'].replace('\n', '<br>\n')
-                comments_html = f"<div>{comments_with_breaks}</div>"
+                # Converter texto em negrito **texto** para <strong>texto</strong>
+                comments_with_bold = re.sub(r'\*\*(.*?)\*\*', r'<strong>\1</strong>', comments_with_breaks)
+                comments_html = f"<div>{comments_with_bold}</div>"
                 updates.append({
                     "op": "replace",
                     "path": "/fields/Custom.MeetingComments1",
