@@ -477,6 +477,53 @@ class AzureBoardsController:
             print(f"Exception while saving ATA {work_item_id}: {str(e)}")
             return {"error": str(e), "id": work_item_id}
     
+    def update_work_item_status(self, work_item_id, new_status):
+        """Atualiza apenas o status de um work item no Azure DevOps"""
+        try:
+            # URL para atualização do work item
+            api_url = f"https://dev.azure.com/{self.org}/{self.project}/_apis/wit/workitems/{work_item_id}"
+            params = {"api-version": "7.0"}
+            
+            # Headers para PATCH (JSON Patch)
+            headers = self.headers.copy()
+            headers["Content-Type"] = "application/json-patch+json"
+            
+            # Preparar a atualização do status
+            updates = [
+                {
+                    "op": "replace",
+                    "path": "/fields/System.State",
+                    "value": new_status
+                }
+            ]
+            
+            print(f"Updating work item {work_item_id} status to: {new_status}")
+            
+            response = requests.patch(api_url, json=updates, headers=headers, params=params)
+            
+            if response.status_code == 200:
+                print(f"Successfully updated work item {work_item_id} status to {new_status}")
+                return {
+                    "success": True, 
+                    "message": f"Status atualizado para {new_status}",
+                    "id": work_item_id,
+                    "new_status": new_status
+                }
+            else:
+                error_msg = f"HTTP {response.status_code}"
+                try:
+                    error_detail = response.json()
+                    error_msg += f": {error_detail}"
+                except:
+                    error_msg += f": {response.text}"
+                
+                print(f"Failed to update work item {work_item_id} status: {error_msg}")
+                return {"error": error_msg, "id": work_item_id}
+                
+        except Exception as e:
+            print(f"Exception while updating status for work item {work_item_id}: {str(e)}")
+            return {"error": str(e), "id": work_item_id}
+
     def _convert_datetime_to_iso(self, datetime_local):
         """Converte datetime-local para formato ISO do Azure DevOps (adiciona 3h para UTC)"""
         try:

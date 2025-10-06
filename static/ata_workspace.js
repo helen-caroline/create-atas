@@ -444,7 +444,22 @@ function populateCardEditForm(card) {
     // Basic card information (readonly)
     document.getElementById('cardTitle').value = title;
     document.getElementById('cardDescription').value = description;
-    document.getElementById('cardStatus').value = state;
+    
+    // Set status dropdown value
+    const statusDropdown = document.getElementById('cardStatus');
+    statusDropdown.value = state;
+    
+    // Update status appearance
+    updateStatusAppearance(statusDropdown, state);
+    
+    // Add event listener for status changes
+    if (!statusDropdown.hasAttribute('data-listener-added')) {
+        statusDropdown.addEventListener('change', handleStatusChange);
+        statusDropdown.addEventListener('change', function(e) {
+            updateStatusAppearance(e.target, e.target.value);
+        });
+        statusDropdown.setAttribute('data-listener-added', 'true');
+    }
     
     const priorityText = {
         1: 'Prioridade 1 (Alta)',
@@ -459,6 +474,63 @@ function populateCardEditForm(card) {
     
     // ATA fields - load saved data if exists
     loadSavedATAData(card.id);
+}
+
+async function handleStatusChange(event) {
+    const newStatus = event.target.value;
+    const workItemId = currentEditingCard?.id;
+    
+    if (!workItemId) {
+        showToast('Erro: Work Item ID não encontrado', 'error');
+        return;
+    }
+    
+    try {
+        showToast('Atualizando status...', 'info');
+        
+        const response = await fetch(`/api/ata/${workItemId}/status`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ status: newStatus })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showToast(`Status atualizado para ${newStatus}`, 'success');
+            
+            // Update the card in the cards list
+            if (currentEditingCard) {
+                currentEditingCard.fields['System.State'] = newStatus;
+            }
+            
+            // Refresh the cards display
+            displayWorkItems(allWorkItems);
+        } else {
+            showToast(`Erro: ${result.error}`, 'error');
+            // Revert the dropdown to previous value
+            event.target.value = currentEditingCard?.fields['System.State'] || '';
+        }
+    } catch (error) {
+        console.error('Error updating status:', error);
+        showToast('Erro ao atualizar status', 'error');
+        // Revert the dropdown to previous value
+        event.target.value = currentEditingCard?.fields['System.State'] || '';
+    }
+}
+
+function updateStatusAppearance(selectElement, status) {
+    if (!selectElement) return;
+    
+    // Remove any existing status data attributes
+    selectElement.removeAttribute('data-status');
+    
+    // Add the current status as data attribute for CSS styling
+    if (status) {
+        selectElement.setAttribute('data-status', status);
+    }
 }
 
 function generateNextStepsRows() {

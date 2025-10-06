@@ -185,11 +185,9 @@
                                     <label>Status:</label>
                                     <select id="statusFilter">
                                         <option value="">Todos</option>
-                                        <option value="new">New</option>
-                                        <option value="active">Active</option>
-                                        <option value="resolved">Resolved</option>
-                                        <option value="closed">Closed</option>
-                                        <option value="proposed">Proposed</option>
+                                        <option value="proposed">📋 Proposed</option>
+                                        <option value="active">⚡ Active</option>
+                                        <option value="closed">✅ Closed</option>
                                     </select>
                                 </div>
                                 
@@ -257,7 +255,11 @@
                                 <div class="form-row">
                                     <div class="form-group">
                                         <label for="cardStatus">Status</label>
-                                        <input type="text" id="cardStatus" name="status" readonly>
+                                        <select id="cardStatus" name="status">
+                                            <option value="Proposed">📋 Proposed</option>
+                                            <option value="Active">⚡ Active</option>
+                                            <option value="Closed">✅ Closed</option>
+                                        </select>
                                     </div>
                                     <div class="form-group">
                                         <label for="cardPriority">Prioridade</label>

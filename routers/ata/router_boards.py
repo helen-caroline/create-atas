@@ -59,6 +59,28 @@ def get_ata_details(work_item_id):
         print(f"API ERROR: Failed to get ATA details for {work_item_id}: {str(e)}")
         return jsonify({"error": str(e)}), 500
 
+@boards_bp.route("/api/ata/<work_item_id>/status", methods=["PUT"])
+def update_ata_status(work_item_id):
+    """Atualiza apenas o status de uma ATA específica"""
+    try:
+        print(f"API REQUEST: Updating status for work_item_id = {work_item_id}")
+        data = request.get_json()
+        new_status = data.get('status')
+        
+        if not new_status:
+            return jsonify({"error": "Status is required"}), 400
+        
+        print(f"  - New status: {new_status}")
+        
+        boards_controller = AzureBoardsController()
+        result = boards_controller.update_work_item_status(work_item_id, new_status)
+        
+        print(f"API RESPONSE: Successfully updated status for ATA {work_item_id}")
+        return jsonify(result)
+    except Exception as e:
+        print(f"API ERROR: Failed to update status for {work_item_id}: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
 @boards_bp.route("/api/ata/<work_item_id>/save", methods=["POST"])
 def save_ata_details(work_item_id):
     """Salva detalhes atualizados de uma ATA específica"""
