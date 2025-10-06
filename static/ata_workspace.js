@@ -622,7 +622,11 @@ function populateCardEditForm(card) {
     // Generate Next Steps rows
     generateNextStepsRows();
     
-    // ATA fields - load saved data if exists
+    // Extrair dados automaticamente do título da ATA e preencher os campos
+    const extractedData = extractATADataFromTitle(title, card.id);
+    fillATAFormFields(extractedData);
+    
+    // ATA fields - load saved data if exists (this may override the auto-filled data)
     loadSavedATAData(card.id);
 }
 
@@ -794,6 +798,113 @@ function setDefaultATAData() {
     }
 }
 
+/**
+ * Extrai dados automaticamente do título da ATA para preencher os campos do formulário
+ * @param {string} title - Título da ATA
+ * @param {string} cardId - ID do card para extrair o número do requerimento
+ * @returns {Object} - Objeto com os dados extraídos
+ */
+function extractATADataFromTitle(title, cardId) {
+    const extractedData = {
+        data: '',
+        requerimento: '',
+        tituloIssue: ''
+    };
+    
+    // Extrair número do requerimento do cardId (remover #)
+    if (cardId) {
+        extractedData.requerimento = cardId.toString().replace('#', '');
+    }
+    
+    // Extrair data do título usando regex para encontrar padrões de data
+    // Formatos suportados: dd/mm/yyyy, dd/mm/yy, dd-mm-yyyy, dd-mm-yy
+    const dateRegex = /(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/;
+    const dateMatch = title.match(dateRegex);
+    
+    if (dateMatch) {
+        let day = dateMatch[1].padStart(2, '0');
+        let month = dateMatch[2].padStart(2, '0');
+        let year = dateMatch[3];
+        
+        // Se o ano tem 2 dígitos, assumir 20xx
+        if (year.length === 2) {
+            year = '20' + year;
+        }
+        
+        // Formatar para YYYY-MM-DD (formato HTML date input)
+        extractedData.data = `${year}-${month}-${day}`;
+    }
+    
+    // Extrair título da issue removendo a parte da data e mantendo o prefixo
+    let issueTitle = title;
+    
+    // Remover a parte que contém a data (buscar por padrões como "- Atividade do dia")
+    const activityPattern = /\s*-\s*Atividade do dia.*$/i;
+    issueTitle = issueTitle.replace(activityPattern, '');
+    
+    // Remover outras variações de data no final
+    const dateAtEndPattern = /\s*-\s*\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}.*$/;
+    issueTitle = issueTitle.replace(dateAtEndPattern, '');
+    
+    // Extrair padrão de sprint (manter tudo até "Sprint XXX")
+    const sprintPattern = /(.*Sprint\s+\d+)/i;
+    const sprintMatch = issueTitle.match(sprintPattern);
+    
+    if (sprintMatch) {
+        extractedData.tituloIssue = sprintMatch[1].trim();
+    } else {
+        // Se não encontrar padrão de sprint, usar o título limpo
+        extractedData.tituloIssue = issueTitle.trim();
+    }
+    
+    return extractedData;
+}
+
+/**
+ * Preenche automaticamente os campos do formulário ATA com dados extraídos
+ * @param {Object} extractedData - Dados extraídos do título
+ */
+function fillATAFormFields(extractedData) {
+    // Preencher campo Data
+    if (extractedData.data) {
+        const dataField = document.getElementById('data');
+        if (dataField) {
+            dataField.value = extractedData.data;
+        }
+    }
+    
+    // Preencher campo Número do Requerimento
+    if (extractedData.requerimento) {
+        const requerimentoField = document.getElementById('requerimento');
+        if (requerimentoField) {
+            requerimentoField.value = extractedData.requerimento;
+        }
+    }
+    
+    // Preencher campo Título da Issue
+    if (extractedData.tituloIssue) {
+        const tituloIssueField = document.getElementById('titulo_issue');
+        if (tituloIssueField) {
+            tituloIssueField.value = extractedData.tituloIssue;
+        }
+    }
+}
+
+/**
+ * Limpa os campos do formulário ATA
+ */
+function clearATAFormFields() {
+    const dataField = document.getElementById('data');
+    const requerimentoField = document.getElementById('requerimento');
+    const tituloIssueField = document.getElementById('titulo_issue');
+    const resumoField = document.getElementById('resumo');
+    
+    if (dataField) dataField.value = '';
+    if (requerimentoField) requerimentoField.value = '';
+    if (tituloIssueField) tituloIssueField.value = '';
+    if (resumoField) resumoField.value = '';
+}
+
 function showCardsList() {
     const cardsListView = document.getElementById('cardsListView');
     const cardEditView = document.getElementById('cardEditView');
@@ -803,6 +914,9 @@ function showCardsList() {
     // Show list view and hide edit view
     cardsListView.style.display = 'flex';
     cardEditView.style.display = 'none';
+    
+    // Limpar os campos do formulário ATA quando voltar para a lista
+    clearATAFormFields();
     
     currentEditingCard = null;
 }
