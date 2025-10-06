@@ -76,19 +76,65 @@ function hideResultLoading() {
     if (resultPlaceholder) resultPlaceholder.style.display = 'flex';
 }
 
+// Função para ajustar altura dinamicamente baseada no conteúdo
+function adjustTextAreaHeight(element, content) {
+    console.log('DEBUG: adjustTextAreaHeight called');
+    
+    // Primeiro, resetar a altura para permitir medição correta
+    element.style.height = 'auto';
+    element.style.minHeight = '300px';
+    
+    // Aguardar um frame para o DOM atualizar
+    requestAnimationFrame(() => {
+        // Método 1: Baseado no scrollHeight (mais preciso)
+        const scrollHeight = element.scrollHeight;
+        console.log('DEBUG: Element scrollHeight:', scrollHeight);
+        
+        // Método 2: Baseado no número de linhas (backup)
+        const lines = content.split('\n').length;
+        const lineHeight = 1.5; // line-height do CSS
+        const fontSize = 0.85 * 16; // font-size em pixels
+        const padding = 30; // padding top + bottom
+        const calculatedHeight = lines * (fontSize * lineHeight) + padding;
+        
+        console.log('DEBUG: Content lines:', lines);
+        console.log('DEBUG: Calculated height by lines:', calculatedHeight);
+        
+        // Usar o maior entre os dois métodos para garantir que não corte
+        const finalHeight = Math.max(scrollHeight + 20, calculatedHeight, 300);
+        
+        console.log('DEBUG: Final height applied:', finalHeight);
+        
+        // Aplicar a altura final
+        element.style.height = finalHeight + 'px';
+        element.style.minHeight = finalHeight + 'px';
+        
+        // Para textos muito longos (mais de 800px), usar scroll
+        if (finalHeight > 800) {
+            element.style.maxHeight = '800px';
+            element.style.overflowY = 'auto';
+            console.log('DEBUG: Applied max-height with scroll for very long content');
+        } else {
+            element.style.maxHeight = 'none';
+            element.style.overflowY = 'hidden';
+            console.log('DEBUG: No scroll needed, content fits');
+        }
+        
+        // Garantir que o contêiner pai também se ajuste
+        const container = element.closest('.ata-text-container');
+        if (container) {
+            container.style.height = 'auto';
+            container.style.minHeight = 'auto';
+        }
+    });
+}
+
 async function handleATASubmit(e) {
     e.preventDefault();
     console.log('DEBUG: handleATASubmit called - TESTE FUNCIONANDO!');
     
-    // Mostrar pop-up imediatamente
-    showGerandoAtaPopup();
+    // Mostrar apenas o estado de carregamento (sem pop-up)
     showResultLoading();
-    
-    // Simular delay de 4 segundos
-    setTimeout(() => {
-        hideGerandoAtaPopup();
-        console.log('DEBUG: Pop-up escondido após 4 segundos');
-    }, 4000);
     
     const form = e.target;
     const formData = new FormData(form);
@@ -116,15 +162,12 @@ async function handleATASubmit(e) {
         
         console.log('DEBUG: ATA Response data:', data);
         
-        // Aguardar até o pop-up terminar para mostrar resultado
-        setTimeout(() => {
-            displayATAResult(data);
-            showToast('ATA gerada com sucesso!', 'success');
-        }, 4000);
+        // Mostrar resultado imediatamente (sem delay)
+        displayATAResult(data);
+        showToast('ATA gerada com sucesso!', 'success');
         
     } catch (error) {
         console.error('Erro ao gerar ATA:', error);
-        hideGerandoAtaPopup();
         hideResultLoading();
         ataError.textContent = `Erro: ${error.message}`;
         ataError.style.display = 'block';
@@ -154,7 +197,18 @@ function displayATAResult(data) {
     
     // Populate data using correct keys from backend
     if (nomeArquivo) nomeArquivo.textContent = nomeGerado;
-    if (ataText) ataText.textContent = data.ata || ''; // Full ATA content
+    if (ataText) {
+        const ataContent = data.ata || '';
+        console.log('DEBUG: ATA content length:', ataContent.length);
+        console.log('DEBUG: ATA content preview:', ataContent.substring(0, 100) + '...');
+        console.log('DEBUG: ATA content ending:', ataContent.substring(ataContent.length - 100));
+        
+        // Definir o conteúdo
+        ataText.textContent = ataContent;
+        
+        // Ajustar altura dinamicamente baseada no conteúdo
+        adjustTextAreaHeight(ataText, ataContent);
+    }
     if (tituloAta) tituloAta.textContent = data.titulo || ''; // Extracted title
     if (proximosPassos) proximosPassos.textContent = data.proximos || ''; // Next steps
     

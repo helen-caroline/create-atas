@@ -2,12 +2,6 @@
    ATA WORKSPACE - CSS STYLES
    ============================================ */
 
-/* Animação para a barra de progresso do pop-up */
-@keyframes progressBar {
-    from { width: 0%; }
-    to { width: 100%; }
-}
-
 /* Override header to be more compact */
 .main-header {
     padding: 0.5rem 1.5rem !important; /* Much more compact header */
@@ -186,7 +180,9 @@
     overflow-y: auto;
     display: flex;
     flex-direction: column;
-    min-height: 0; /* Importante para permitir que o flex funcione corretamente */
+    min-height: 0;
+    /* Permitindo que esta seção cresça conforme necessário */
+    max-height: none;
 }
 
 .result-placeholder {
@@ -876,15 +872,19 @@
     line-height: 1.5;
     white-space: pre-wrap;
     overflow-y: auto;
-    overflow-x: hidden; /* Evita scroll horizontal */
+    overflow-x: hidden;
     flex: 1;
     margin: 0;
-    min-height: 200px; /* Altura mínima garantida */
-    max-height: 400px; /* Altura máxima antes do scroll aparecer */
-    word-wrap: break-word; /* Quebra palavras longas */
-    resize: vertical; /* Permite redimensionar verticalmente */
-    scrollbar-width: thin; /* Para Firefox */
-    scrollbar-color: #667eea #f1f1f1; /* Para Firefox */
+    /* Altura será controlada dinamicamente pelo JavaScript */
+    height: auto;
+    min-height: 300px; /* Altura mínima de fallback */
+    word-wrap: break-word;
+    resize: vertical;
+    scrollbar-width: thin;
+    scrollbar-color: #667eea #f1f1f1;
+    /* Garantindo que o texto nunca seja cortado */
+    display: block;
+    width: 100%;
 }
 
 /* Estilização da scrollbar para WebKit browsers */
@@ -915,7 +915,7 @@
     gap: 8px;
     flex: 1;
     min-height: 0;
-    max-height: 500px; /* Altura máxima do contêiner */
+    /* Removendo max-height para permitir expansão total */
 }
 
 /* Toast Notifications */
