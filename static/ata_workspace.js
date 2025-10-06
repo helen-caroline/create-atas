@@ -116,7 +116,7 @@ function copyAta() {
 function initializeCardsManagement() {
     loadWorkItems();
     setupCardsEventListeners();
-    loadCompanies();
+    // loadCompanies() will be called after sprint is loaded
 }
 
 function setupCardsEventListeners() {
@@ -203,17 +203,23 @@ async function loadSprints() {
     }
 }
 
-async function loadCompanies() {
+async function loadCompanies(sprintId = null) {
     const companyFilter = document.getElementById('companyFilter');
     if (!companyFilter) {
         console.log('DEBUG: companyFilter element not found');
         return;
     }
     
-    console.log('DEBUG: Starting loadCompanies()');
+    console.log('DEBUG: Starting loadCompanies() with sprintId:', sprintId);
     
     try {
-        const response = await fetch('/api/companies');
+        // Construir URL da API - se sprintId for fornecido, adicionar como parâmetro
+        let apiUrl = '/api/companies';
+        if (sprintId) {
+            apiUrl += `?sprint_id=${sprintId}`;
+        }
+        
+        const response = await fetch(apiUrl);
         console.log('DEBUG: API response status:', response.status);
         
         const data = await response.json();
@@ -238,6 +244,9 @@ async function loadCompanies() {
             console.log('DEBUG: Added option for company:', company);
         });
         
+        // Reset company filter to "Todas" when sprint changes
+        companyFilter.value = '';
+        
         console.log('DEBUG: loadCompanies() completed successfully');
         
     } catch (error) {
@@ -257,7 +266,10 @@ async function handleSprintChange(event) {
         // Update current sprint info globally
         currentSprint = { id: selectedSprintId };
         
-        // Load work items for the selected sprint
+        // Load companies for the selected sprint FIRST
+        await loadCompanies(selectedSprintId);
+        
+        // Then load work items for the selected sprint
         await loadWorkItemsForSprint(selectedSprintId);
         
     } catch (error) {
@@ -429,6 +441,13 @@ async function loadWorkItems() {
             console.log('No work items found');
             if (noCardsMessage) noCardsMessage.style.display = 'block';
             updateCardsCount(0, 0);
+        }
+
+        // Load companies for current sprint after work items are loaded
+        if (currentSprint && currentSprint.id) {
+            await loadCompanies(currentSprint.id);
+        } else {
+            await loadCompanies(); // Load companies without sprint filter if no current sprint
         }
 
     } catch (error) {

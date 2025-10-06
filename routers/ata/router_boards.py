@@ -9,10 +9,17 @@ def get_companies():
     try:
         boards_controller = AzureBoardsController()
         
-        # Buscar work items da sprint atual
-        work_items = boards_controller.get_my_work_items_in_sprint()
+        # Verificar se foi especificada uma sprint específica
+        sprint_id = request.args.get('sprint_id')
         
-        print(f"DEBUG: Found {len(work_items)} work items")
+        if sprint_id:
+            # Buscar work items da sprint específica
+            work_items = boards_controller.get_my_work_items_in_sprint(sprint_id)
+            print(f"DEBUG: Found {len(work_items)} work items for sprint {sprint_id}")
+        else:
+            # Buscar work items da sprint atual
+            work_items = boards_controller.get_my_work_items_in_sprint()
+            print(f"DEBUG: Found {len(work_items)} work items for current sprint")
         
         # Extrair empresas únicas
         companies = set()
