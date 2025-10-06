@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Debug - Filtro TOTVS</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .item { margin: 10px 0; padding: 10px; border: 1px solid #ccc; }
+        .totvs { background-color: #e7f5e7; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Debug do Filtro TOTVS</h1>
+    
+    <div>
+        <label>Filtro por Empresa:</label>
+        <select id="companyFilter" onchange="applyFilter()">
+            <option value="">Todas</option>
+        </select>
+    </div>
+    
+    <div id="stats" style="margin: 20px 0; padding: 10px; background: #f0f0f0;">
+        <p>Estatísticas aparecerão aqui...</p>
+    </div>
+    
+    <div id="items"></div>
+
+    <script>
+        let allWorkItems = [];
+        
+        async function loadData() {
+            try {
+                console.log('🔄 Carregando dados...');
+                
+                // Carregar companies
+                const companiesResponse = await fetch('/api/companies');
+                const companiesData = await companiesResponse.json();
+                console.log('📊 Companies:', companiesData);
+                
+                const companyFilter = document.getElementById('companyFilter');
+                companiesData.companies.forEach(company => {
+                    const option = document.createElement('option');
+                    option.value = company;
+                    option.textContent = company;
+                    companyFilter.appendChild(option);
+                });
+                
+                // Carregar work items
+                const itemsResponse = await fetch('/api/boards/my-work-items');
+                const itemsData = await itemsResponse.json();
+                console.log('📋 Work Items:', itemsData);
+                
+                const allItems = itemsData.work_items || [];
+                console.log('📈 Total items da API:', allItems.length);
+                
+                // Filtrar apenas ATAs
+                allWorkItems = allItems.filter(item => {
+                    const workItemType = item.fields['System.WorkItemType'] || '';
+                    return workItemType.toLowerCase() === 'ata';
+                });
+                
+                console.log('🎯 ATAs filtradas:', allWorkItems.length);
+                
+                // Estatísticas
+                const companies = new Set();
+                const totvs_items = [];
+                
+                allWorkItems.forEach(item => {
+                    const company = item.company;
+                    if (company) {
+                        companies.add(company);
+                        if (company === 'TOTVS') {
+                            totvs_items.push(item);
+                        }
+                    }
+                });
+                
+                document.getElementById('stats').innerHTML = `
+                    <h3>📊 Estatísticas</h3>
+                    <p><strong>Total ATAs:</strong> ${allWorkItems.length}</p>
+                    <p><strong>ATAs TOTVS:</strong> ${totvs_items.length}</p>
+                    <p><strong>Empresas encontradas:</strong> ${[...companies].join(', ')}</p>
+                `;
+                
+                displayItems(allWorkItems);
+                
+            } catch (error) {
+                console.error('❌ Erro:', error);
+                document.getElementById('stats').innerHTML = `<p style="color: red;">Erro: ${error.message}</p>`;
+            }
+        }
+        
+        function displayItems(items) {
+            const container = document.getElementById('items');
+            container.innerHTML = '';
+            
+            items.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'item';
+                if (item.company === 'TOTVS') {
+                    div.classList.add('totvs');
+                }
+                
+                div.innerHTML = `
+                    <h4>🎫 #${item.id} - ${item.company || 'SEM EMPRESA'}</h4>
+                    <p><strong>Título:</strong> ${item.fields['System.Title']}</p>
+                    <p><strong>Tipo:</strong> ${item.fields['System.WorkItemType']}</p>
+                `;
+                
+                container.appendChild(div);
+            });
+        }
+        
+        function applyFilter() {
+            const companyFilter = document.getElementById('companyFilter').value;
+            console.log('🔍 Aplicando filtro:', companyFilter);
+            
+            let filteredItems;
+            if (!companyFilter) {
+                filteredItems = allWorkItems;
+            } else {
+                filteredItems = allWorkItems.filter(item => {
+                    const company = item.company || '';
+                    const matches = company.toUpperCase() === companyFilter.toUpperCase();
+                    console.log(`  Item ${item.id}: company="${company}" vs filter="${companyFilter}" -> ${matches ? '✅' : '❌'}`);
+                    return matches;
+                });
+            }
+            
+            console.log(`🎯 Resultado: ${filteredItems.length} de ${allWorkItems.length} items`);
+            displayItems(filteredItems);
+            
+            document.getElementById('stats').innerHTML += `
+                <p style="color: blue;"><strong>Filtro aplicado:</strong> ${companyFilter || 'Nenhum'}</p>
+                <p style="color: blue;"><strong>Resultado:</strong> ${filteredItems.length} items</p>
+            `;
+        }
+        
+        window.addEventListener('load', loadData);
+    </script>
+</body>
+</html>

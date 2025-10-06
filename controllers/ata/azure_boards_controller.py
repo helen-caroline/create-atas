@@ -1,6 +1,7 @@
 import os
 import base64
 import requests
+import re
 from datetime import datetime
 
 class AzureBoardsController:
@@ -33,6 +34,44 @@ class AzureBoardsController:
             "Content-Type": "application/json",
             "Accept": "application/json"
         }
+    
+    def extract_company_from_title(self, title):
+        """
+        Extrai a empresa do título da ATA usando regex.
+        Procura por padrão [ATA][EMPRESA] no início do título.
+        """
+        if not title:
+            return None
+        
+        # Busca o padrão [ATA][EMPRESA][Nome] - empresa fica no segundo conjunto de colchetes
+        pattern = r'^\[ATA\]\[([^\]]+)\]'
+        match = re.search(pattern, title, re.IGNORECASE)
+        
+        if match:
+            company = match.group(1).strip().upper()
+            return company
+        
+        # Fallback: procura por qualquer empresa válida nos primeiros colchetes
+        pattern = r'^\[([^\]]+)\]'
+        excluded_terms = {'ATA', 'TASK', 'BUG', 'FEATURE', 'USER STORY'}
+        
+        # Buscar todos os matches de colchetes no início do título
+        title_clean = title.strip()
+        while True:
+            match = re.match(pattern, title_clean)
+            if not match:
+                break
+                
+            captured_text = match.group(1).strip().upper()
+            
+            # Se não é um termo excluído, essa é a empresa
+            if captured_text not in excluded_terms:
+                return captured_text
+            
+            # Remove o primeiro colchete e continua procurando
+            title_clean = title_clean[match.end():].strip()
+        
+        return None
     
     def get_current_sprint(self):
         """Busca a sprint ativa/atual do time"""
@@ -177,7 +216,7 @@ class AzureBoardsController:
             print(f"Erro ao buscar últimas 3 sprints: {str(e)}")
             return []
 
-    def get_my_work_items_in_sprint(self, sprint_id=None):
+    def get_my_work_items_in_sprint(self, sprint_id=None, company_filter=None):
         """Busca work items (cards) atribuídos ao usuário na sprint ativa usando WIQL"""
         try:
             # Se não foi fornecido sprint_id, buscar sprint atual
@@ -194,7 +233,18 @@ class AzureBoardsController:
                 return []
             
             # Usar WIQL para buscar apenas work items atribuídos ao usuário na sprint
-            return self._get_work_items_by_query(sprint_path)
+            work_items = self._get_work_items_by_query(sprint_path)
+            
+            # Aplicar filtro por empresa se especificado
+            if company_filter:
+                filtered_items = []
+                for item in work_items:
+                    item_company = item.get("company")
+                    if item_company and item_company.upper() == company_filter.upper():
+                        filtered_items.append(item)
+                return filtered_items
+            
+            return work_items
                 
         except Exception as e:
             raise Exception(f"Erro ao buscar work items: {str(e)}")
@@ -302,14 +352,28 @@ class AzureBoardsController:
                 
                 # Retornar work items no formato esperado pelo frontend
                 formatted_work_items = []
+                excluded_terms = {'ATA', 'TASK', 'BUG', 'FEATURE', 'USER STORY'}  # Termos que não são empresas
+                
                 for item in work_items:
                     fields = item.get("fields", {})
+                    title = fields.get("System.Title", "")
                     
-                    # Manter a estrutura original do item e adicionar fields
+                    # Extrair empresa do título
+                    raw_company = self.extract_company_from_title(title)
+                    
+                    # Normalizar e filtrar empresa
+                    company = None
+                    if raw_company:
+                        company_upper = raw_company.upper()
+                        if company_upper not in excluded_terms:
+                            company = company_upper
+                    
+                    # Manter a estrutura original do item e adicionar fields + empresa
                     formatted_item = {
                         "id": item.get("id"),
                         "url": item.get("url", ""),
-                        "fields": fields  # Manter fields para compatibilidade com o frontend
+                        "fields": fields,  # Manter fields para compatibilidade com o frontend
+                        "company": company  # Adicionar informação de empresa normalizada
                     }
                     formatted_work_items.append(formatted_item)
                 

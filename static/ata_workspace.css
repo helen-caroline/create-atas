@@ -453,6 +453,8 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
     font-size: 0.8rem;
     color: #6c757d;
 }
@@ -461,6 +463,24 @@
     display: flex;
     align-items: center;
     gap: 4px;
+}
+
+.card-type {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.card-company {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: #e3f2fd;
+    color: #1976d2;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 500;
+    font-size: 0.75rem;
 }
 
 .priority-1 { color: #dc3545; }

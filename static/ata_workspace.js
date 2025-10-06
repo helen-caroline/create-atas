@@ -116,6 +116,7 @@ function copyAta() {
 function initializeCardsManagement() {
     loadWorkItems();
     setupCardsEventListeners();
+    loadCompanies();
 }
 
 function setupCardsEventListeners() {
@@ -128,9 +129,11 @@ function setupCardsEventListeners() {
     // Filter dropdowns
     const statusFilter = document.getElementById('statusFilter');
     const priorityFilter = document.getElementById('priorityFilter');
+    const companyFilter = document.getElementById('companyFilter');
     
     if (statusFilter) statusFilter.addEventListener('change', filterCards);
     if (priorityFilter) priorityFilter.addEventListener('change', filterCards);
+    if (companyFilter) companyFilter.addEventListener('change', filterCards);
     
     // Sprint selector
     const sprintSelector = document.getElementById('sprintSelector');
@@ -197,6 +200,49 @@ async function loadSprints() {
         console.error('Error loading sprints:', error);
         sprintSelector.innerHTML = '<option value="">Erro ao carregar sprints</option>';
         showToast('Erro ao carregar sprints', 'error');
+    }
+}
+
+async function loadCompanies() {
+    const companyFilter = document.getElementById('companyFilter');
+    if (!companyFilter) {
+        console.log('DEBUG: companyFilter element not found');
+        return;
+    }
+    
+    console.log('DEBUG: Starting loadCompanies()');
+    
+    try {
+        const response = await fetch('/api/companies');
+        console.log('DEBUG: API response status:', response.status);
+        
+        const data = await response.json();
+        console.log('DEBUG: API response data:', data);
+        
+        if (data.error) {
+            throw new Error(data.error);
+        }
+        
+        const companies = data.companies || [];
+        console.log('DEBUG: Companies array:', companies);
+        
+        // Clear existing options (keep the "Todas" option)
+        companyFilter.innerHTML = '<option value="">Todas</option>';
+        
+        // Add company options
+        companies.forEach(company => {
+            const option = document.createElement('option');
+            option.value = company;
+            option.textContent = `🏢 ${company}`;
+            companyFilter.appendChild(option);
+            console.log('DEBUG: Added option for company:', company);
+        });
+        
+        console.log('DEBUG: loadCompanies() completed successfully');
+        
+    } catch (error) {
+        console.error('Error loading companies:', error);
+        showToast('Erro ao carregar empresas', 'error');
     }
 }
 
@@ -337,16 +383,39 @@ async function loadWorkItems() {
 
         // Store data globally with validation - filter only ATAs
         const allItems = Array.isArray(data.work_items) ? data.work_items : [];
+        
+        console.log('📊 DADOS CARREGADOS:');
+        console.log('  - Total items da API:', allItems.length);
+        
+        // Debug dos primeiros 3 items
+        allItems.slice(0, 3).forEach((item, index) => {
+            const workItemType = item.fields['System.WorkItemType'] || '';
+            const company = item.company || 'sem empresa';
+            const title = item.fields['System.Title'] || '';
+            console.log(`  - Item ${index + 1}: tipo="${workItemType}", company="${company}", title="${title.substring(0, 50)}..."`);
+        });
+        
         allWorkItems = allItems.filter(item => {
             const workItemType = item.fields['System.WorkItemType'] || '';
-            return workItemType.toLowerCase() === 'ata';
+            const isATA = workItemType.toLowerCase() === 'ata';
+            console.log(`  - Filtro: ${item.id} (${workItemType}) -> ${isATA ? 'INCLUÍDO' : 'EXCLUÍDO'}`);
+            return isATA;
         });
+        
         currentSprint = data.sprint || null;
 
-        console.log('Raw API response:', data);
-        console.log('Total items:', allItems.length);
-        console.log('ATA items filtered:', allWorkItems.length);
-        console.log('Sprint info:', currentSprint);
+        console.log('🎯 RESULTADO DO FILTRO:');
+        console.log('  - Total items:', allItems.length);
+        console.log('  - ATA items filtrados:', allWorkItems.length);
+        console.log('  - Sprint info:', currentSprint);
+        
+        // Debug das empresas dos items filtrados
+        const companies = new Set();
+        allWorkItems.forEach(item => {
+            const company = item.company;
+            if (company) companies.add(company);
+        });
+        console.log('  - Empresas encontradas:', [...companies]);
 
         // Hide loading
         if (loadingElement) loadingElement.style.display = 'none';
@@ -412,6 +481,7 @@ function createCardElement(item) {
     const description = item.fields['System.Description'] || 'Sem descrição';
     const workItemType = item.fields['System.WorkItemType'] || 'Task';
     const priority = item.fields['Microsoft.VSTS.Common.Priority'] || 4;
+    const company = item.company || '';
     
     // Format status for CSS class
     const statusClass = `status-${state.toLowerCase().replace(/\s+/g, '-')}`;
@@ -452,6 +522,10 @@ function createCardElement(item) {
                 <i class="fas fa-tag"></i>
                 ${workItemType}
             </div>
+            ${company ? `<div class="card-company">
+                <i class="fas fa-building"></i>
+                ${company}
+            </div>` : ''}
         </div>
     `;
     
@@ -509,6 +583,14 @@ function filterCards() {
     const searchTerm = document.getElementById('searchCards')?.value.toLowerCase() || '';
     const statusFilter = document.getElementById('statusFilter')?.value || '';
     const priorityFilter = document.getElementById('priorityFilter')?.value || '';
+    const companyFilter = document.getElementById('companyFilter')?.value || '';
+    
+    console.log('🔍 FILTRO DEBUG:');
+    console.log('  - searchTerm:', searchTerm);
+    console.log('  - statusFilter:', statusFilter);
+    console.log('  - priorityFilter:', priorityFilter);
+    console.log('  - companyFilter:', companyFilter);
+    console.log('  - allWorkItems.length:', allWorkItems.length);
     
     const filteredItems = allWorkItems.filter(item => {
         // Extract data from Azure DevOps structure
@@ -516,6 +598,7 @@ function filterCards() {
         const description = item.fields['System.Description'] || '';
         const state = item.fields['System.State'] || '';
         const priority = item.fields['Microsoft.VSTS.Common.Priority'] || 4;
+        const company = item.company || '';
         
         // Search filter
         const matchesSearch = !searchTerm || 
@@ -531,8 +614,21 @@ function filterCards() {
         const matchesPriority = !priorityFilter || 
             priority.toString() === priorityFilter;
         
-        return matchesSearch && matchesStatus && matchesPriority;
+        // Company filter
+        const matchesCompany = !companyFilter || 
+            company.toUpperCase() === companyFilter.toUpperCase();
+        
+        const passes = matchesSearch && matchesStatus && matchesPriority && matchesCompany;
+        
+        // Debug apenas para filtro de empresa
+        if (companyFilter) {
+            console.log(`  Item ${item.id}: company="${company}" vs filter="${companyFilter}" -> ${matchesCompany ? '✅' : '❌'}`);
+        }
+        
+        return passes;
     });
+    
+    console.log('🎯 Resultado filtro:', filteredItems.length, 'de', allWorkItems.length, 'items');
     
     displayWorkItems(filteredItems);
     updateCardsCount(filteredItems.length, allWorkItems.length);

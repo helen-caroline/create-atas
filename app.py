@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, send_file
 import os
 from dotenv import load_dotenv
 
@@ -13,6 +13,11 @@ load_dotenv()
 
 # Criar aplicação Flask
 app = Flask(__name__)
+
+# Rota para página de debug
+@app.route('/debug-filter')
+def debug_filter():
+    return send_file('debug_filter.html')
 
 # Registrar blueprints
 app.register_blueprint(pages_bp)
